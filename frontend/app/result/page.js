@@ -1,9 +1,10 @@
 'use client'
 import { downloadCertificate } from '../../components/Certificate'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function ResultPage() {
+// Asli content yahan chalega jahan useSearchParams safe rahega
+function ResultContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isMobile, setIsMobile] = useState(true)
@@ -30,7 +31,6 @@ export default function ResultPage() {
         const serial = searchParams.get('serial')
         const body = hash ? { hash } : batch ? { batchNumber: batch } : { serialNumber: serial }
         if (!hash && !batch && !serial) {
-          // Demo mode - use default hash
           body.hash = 'a8f2e4c9d1b7f5e3a2c6d8f4b1e9a7c5d3f2b8e6a4c1d9f7b5e3a2c8d6f4b9e1'
         }
         const res = await fetch('http://localhost:5000/api/verify/scan', {
@@ -79,7 +79,6 @@ export default function ResultPage() {
     </nav>
   )
 
-  // Loading screen
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0A0B10', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <Navbar />
@@ -222,12 +221,7 @@ export default function ResultPage() {
               {/* Buttons */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <button style={{ padding: '16px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 0 20px rgba(0,219,233,0.4)' }}>↗ REPORT</button>
-                <button
-  onClick={() => downloadCertificate(medicine, result, responseTime)}
-  style={{ padding:'16px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'12px', letterSpacing:'0.1em', cursor:'pointer' }}
->
-  ↓ CERTIFICATE
-</button>
+                <button onClick={() => downloadCertificate(medicine, result, responseTime)} style={{ padding:'16px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'12px', letterSpacing:'0.1em', cursor:'pointer' }}>↓ CERTIFICATE</button>
               </div>
               <button onClick={() => router.push('/scan')} style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#849495', fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginBottom: '100px' }}>← SCAN ANOTHER MEDICINE</button>
             </div>
@@ -237,12 +231,7 @@ export default function ResultPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', transform: revealed ? 'translateY(0)' : 'translateY(20px)', opacity: revealed ? 1 : 0, transition: 'all 0.6s ease' }}>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button style={{ padding: '14px 28px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 0 24px rgba(0,219,233,0.4)' }}>↗ REPORT</button>
-                  <button
-  onClick={() => downloadCertificate(medicine, result, responseTime)}
-  style={{ padding:'16px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'12px', letterSpacing:'0.1em', cursor:'pointer' }}
->
-  ↓ CERTIFICATE
-</button>
+                  <button onClick={() => downloadCertificate(medicine, result, responseTime)} style={{ padding:'16px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'12px', letterSpacing:'0.1em', cursor:'pointer' }}>↓ CERTIFICATE</button>
                   <button onClick={() => router.push('/scan')} style={{ padding: '14px 28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#849495', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>← SCAN AGAIN</button>
                 </div>
               </div>
@@ -310,5 +299,22 @@ export default function ResultPage() {
       {isMobile && <BottomNav />}
       <style>{`@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
+  )
+}
+
+// Yeh main exported wrapper hai jo Next.js build ke strict rules ko follow karega
+export default function ResultPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: '#0A0B10', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '3px solid rgba(0,219,233,0.2)', borderTop: '3px solid #00dbe9', animation: 'spin 1s linear infinite', margin: '0 auto 24px' }} />
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '20px', color: '#00dbe9', marginBottom: '8px' }}>Initializing Session...</h2>
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    }>
+      <ResultContent />
+    </Suspense>
   )
 }
