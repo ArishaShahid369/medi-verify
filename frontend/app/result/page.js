@@ -1,0 +1,314 @@
+'use client'
+import { downloadCertificate } from '../../components/Certificate'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+export default function ResultPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isMobile, setIsMobile] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [revealed, setRevealed] = useState(false)
+  const [chainVisible, setChainVisible] = useState([false, false, false, false])
+  const [medicine, setMedicine] = useState(null)
+  const [result, setResult] = useState('authentic')
+  const [responseTime, setResponseTime] = useState(0)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      try {
+        const hash = searchParams.get('hash')
+        const batch = searchParams.get('batch')
+        const serial = searchParams.get('serial')
+        const body = hash ? { hash } : batch ? { batchNumber: batch } : { serialNumber: serial }
+        if (!hash && !batch && !serial) {
+          // Demo mode - use default hash
+          body.hash = 'a8f2e4c9d1b7f5e3a2c6d8f4b1e9a7c5d3f2b8e6a4c1d9f7b5e3a2c8d6f4b9e1'
+        }
+        const res = await fetch('http://localhost:5000/api/verify/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (data.success) {
+          setMedicine(data.medicine)
+          setResult(data.result)
+          setResponseTime(data.responseTime)
+        } else {
+          setError(data.message)
+        }
+      } catch (err) {
+        setError('Connection error: ' + err.message)
+      } finally {
+        setLoading(false)
+        setTimeout(() => setRevealed(true), 200)
+        const timers = [0,1,2,3].map(i => setTimeout(() => setChainVisible(prev => { const n=[...prev]; n[i]=true; return n }), 800 + i*300))
+        return () => timers.forEach(clearTimeout)
+      }
+    }
+    fetchResult()
+  }, [searchParams])
+
+  const Navbar = () => (
+    <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '14px 20px' : '16px 48px', background: 'rgba(10,11,16,0.9)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(0,219,233,0.1)' }}>
+      <button onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(0,219,233,0.25), rgba(0,219,233,0.05))', border: '1px solid rgba(0,219,233,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🔬</div>
+        <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '15px' : '17px', color: '#00dbe9', letterSpacing: '0.08em' }}>MEDI-VERIFY</span>
+      </button>
+      <button onClick={() => router.push('/wallet')} style={{ background: 'rgba(0,219,233,0.08)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '8px 16px', color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', cursor: 'pointer' }}>⬡ CONNECT</button>
+    </nav>
+  )
+
+  const BottomNav = () => (
+    <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0 18px', background: 'rgba(10,11,16,0.97)', backdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      {[{ icon: '⌂', label: 'HOME', path: '/' }, { icon: '⊡', label: 'SCAN', path: '/scan' }, { icon: '◫', label: 'HISTORY', path: '/history' }, { icon: '⊞', label: 'BATCHES', path: '/batches' }, { icon: '◈', label: 'WALLET', path: '/wallet' }].map(item => (
+        <button key={item.label} onClick={() => router.push(item.path)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: item.label === 'SCAN' ? 'rgba(0,219,233,0.12)' : 'transparent', border: 'none', cursor: 'pointer', padding: '7px 14px', borderRadius: '14px' }}>
+          <span style={{ fontSize: '18px', filter: item.label === 'SCAN' ? 'drop-shadow(0 0 6px rgba(0,219,233,0.9))' : 'none' }}>{item.icon}</span>
+          <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, letterSpacing: '0.09em', color: item.label === 'SCAN' ? '#00dbe9' : '#5a6370' }}>{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+
+  // Loading screen
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#0A0B10', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+      <Navbar />
+      <div style={{ textAlign: 'center', marginTop: '-60px' }}>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '3px solid rgba(0,219,233,0.2)', borderTop: '3px solid #00dbe9', animation: 'spin 1s linear infinite', margin: '0 auto 24px' }} />
+        <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '20px', color: '#00dbe9', marginBottom: '8px' }}>Verifying on Blockchain...</h2>
+        <p style={{ fontSize: '13px', color: '#849495' }}>Querying Ethereum network • Please wait</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '20px' }}>
+          {['Checking hash...', 'Querying ledger...', 'Validating chain...'].map((t,i) => (
+            <div key={i} style={{ fontSize: '11px', color: '#5a6370', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '999px', padding: '4px 12px' }}>{t}</div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
+
+  const isAuthentic = result === 'authentic'
+  const resultColor = isAuthentic ? '#00f5a0' : result === 'expired' ? '#ff9500' : '#ff4d6d'
+  const resultText = isAuthentic ? 'VERIFIED' : result === 'expired' ? 'EXPIRED' : result === 'recalled' ? 'RECALLED' : 'COUNTERFEIT'
+  const resultIcon = isAuthentic ? '✅' : result === 'expired' ? '⚠️' : '❌'
+
+  const SupplyChain = () => (
+    <div>
+      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.14em', marginBottom: '20px' }}>SUPPLY CHAIN PROOF</p>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {(medicine?.supplyChain || [
+          { stage: 'Manufacturing', handler: 'PharmaCorp Global', timestamp: new Date('2024-01-15'), notes: 'Genesis Block Created' },
+          { stage: 'Quality Control', handler: 'QC Department', timestamp: new Date('2024-01-20'), notes: 'Passed all checks' },
+          { stage: 'Distribution', handler: 'SecureLogix Trans-Global', timestamp: new Date('2024-02-01'), notes: 'Bio-Security Protocol' },
+          { stage: 'Consumer', handler: 'You', timestamp: new Date(), notes: 'Validated Today' },
+        ]).map((step, i) => (
+          <div key={i} style={{ display: 'flex', gap: '16px', transform: chainVisible[i] ? 'translateX(0)' : 'translateX(-20px)', opacity: chainVisible[i] ? 1 : 0, transition: `all 0.5s ease ${i*150}ms` }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: i === (medicine?.supplyChain?.length || 4) - 1 ? 'rgba(0,219,233,0.15)' : 'rgba(255,255,255,0.05)', border: `2px solid ${i === (medicine?.supplyChain?.length || 4) - 1 ? '#00dbe9' : 'rgba(255,255,255,0.1)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: i === (medicine?.supplyChain?.length || 4) - 1 ? '0 0 16px rgba(0,219,233,0.4)' : 'none' }}>
+                {i === (medicine?.supplyChain?.length || 4) - 1 ? <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#00dbe9', boxShadow: '0 0 10px rgba(0,219,233,1)' }} /> : <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />}
+              </div>
+              {i < (medicine?.supplyChain?.length || 4) - 1 && <div style={{ width: '1px', height: '40px', background: 'repeating-linear-gradient(to bottom, rgba(0,219,233,0.3) 0px, rgba(0,219,233,0.3) 4px, transparent 4px, transparent 10px)' }} />}
+            </div>
+            <div style={{ paddingBottom: '8px', paddingTop: '6px', flex: 1 }}>
+              <h4 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: i === (medicine?.supplyChain?.length || 4) - 1 ? '#00dbe9' : '#e3e1e9', marginBottom: '3px' }}>{step.handler || step.stage}</h4>
+              <p style={{ fontSize: '12px', color: '#849495', marginBottom: '4px' }}>{step.notes} • {new Date(step.timestamp).toLocaleDateString()}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#0A0B10', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: `radial-gradient(circle, ${isAuthentic ? 'rgba(0,245,160,0.08)' : 'rgba(255,77,109,0.08)'} 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
+      <Navbar />
+
+      <div style={{ padding: isMobile ? '0 20px' : '0 80px', maxWidth: isMobile ? '480px' : '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+
+        {/* RESULT HERO */}
+        <div style={{ textAlign: 'center', padding: '36px 0 24px', transform: revealed ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)', opacity: revealed ? 1 : 0, transition: 'all 0.6s cubic-bezier(0.34,1.4,0.64,1)' }}>
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: '20px' }}>
+            <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: `radial-gradient(circle, ${resultColor}25 0%, transparent 70%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: `${resultColor}15`, border: `2px solid ${resultColor}60`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 30px ${resultColor}40`, fontSize: '36px' }}>{resultIcon}</div>
+              <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: `1px solid ${resultColor}30`, animation: 'orbit 3s linear infinite' }} />
+            </div>
+          </div>
+          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, fontSize: isMobile ? '42px' : '56px', letterSpacing: '0.08em', color: resultColor, textShadow: `0 0 40px ${resultColor}60`, marginBottom: '8px', lineHeight: 1 }}>{resultText}</h1>
+          <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 600, color: '#849495', letterSpacing: '0.2em', marginBottom: '8px' }}>
+            {isAuthentic ? 'AUTHENTICITY CONFIRMED VIA BLOCKCHAIN LEDGER' : 'WARNING: VERIFICATION FAILED'}
+          </p>
+          {responseTime > 0 && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,219,233,0.06)', border: '1px solid rgba(0,219,233,0.15)', borderRadius: '999px', padding: '4px 14px' }}>
+              <span style={{ fontSize: '11px', color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600 }}>⚡ Verified in {responseTime}ms</span>
+            </div>
+          )}
+        </div>
+
+        {medicine ? (
+          isMobile ? (
+            <div>
+              {/* Medicine Card */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '20px', marginBottom: '16px', backdropFilter: 'blur(16px)', position: 'relative', overflow: 'hidden', transform: revealed ? 'translateY(0)' : 'translateY(20px)', opacity: revealed ? 1 : 0, transition: 'all 0.6s ease 0.2s' }}>
+                <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: `linear-gradient(90deg, transparent, ${resultColor}60, transparent)` }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '22px', color: '#e3e1e9', marginBottom: '4px' }}>{medicine.name}</h2>
+                    <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 600, color: '#849495', letterSpacing: '0.12em' }}>{medicine.genericName?.toUpperCase()}</p>
+                  </div>
+                  <div style={{ background: 'rgba(0,219,233,0.08)', border: '1px solid rgba(0,219,233,0.25)', borderRadius: '8px', padding: '6px 12px' }}>
+                    <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, color: '#00dbe9' }}>{medicine.dosage}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                  {[{ label: 'BATCH NUMBER', val: medicine.batchNumber }, { label: 'EXPIRY DATE', val: new Date(medicine.expiryDate).toLocaleDateString('en-US', { month: '2-digit', year: 'numeric' }) }].map((f,i) => (
+                    <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '12px' }}>
+                      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '6px' }}>{f.label}</p>
+                      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '16px', fontWeight: 700, color: '#e3e1e9' }}>{f.val}</p>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '12px', marginBottom: '10px' }}>
+                  <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '6px' }}>SALT COMPOSITION</p>
+                  <p style={{ fontSize: '13px', color: '#b9cacb', lineHeight: 1.5, fontStyle: 'italic' }}>{medicine.saltComposition}</p>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '6px' }}>MFG. LICENSE</p>
+                    <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '15px', fontWeight: 700, color: '#e3e1e9' }}>{medicine.licenseNumber}</p>
+                  </div>
+                  <span style={{ fontSize: '20px' }}>🛡️</span>
+                </div>
+              </div>
+
+              {/* Verification Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginBottom: '16px' }}>
+                {[
+                  { label: 'Times Verified', val: (medicine.verificationCount || 0).toLocaleString(), color: '#00dbe9' },
+                  { label: 'On Blockchain', val: medicine.isOnChain ? 'YES ✓' : 'PENDING', color: '#00f5a0' },
+                  { label: 'Response', val: `${responseTime}ms`, color: '#c5c4de' },
+                ].map((s,i) => (
+                  <div key={i} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '12px 8px', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+                    <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '16px', color: s.color }}>{s.val}</div>
+                    <div style={{ fontSize: '10px', color: '#5a6370', marginTop: '3px' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Supply Chain */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '20px', marginBottom: '16px', backdropFilter: 'blur(16px)' }}>
+                <SupplyChain />
+              </div>
+
+              {/* Hash */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(0,219,233,0.06), rgba(0,219,233,0.02))', border: '1px solid rgba(0,219,233,0.15)', borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em' }}>BLOCKCHAIN HASH</p>
+                  <span style={{ fontSize: '11px', color: '#00f5a0', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>✓ IMMUTABLE</span>
+                </div>
+                <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#00dbe9', wordBreak: 'break-all' }}>{medicine.sha256Hash || medicine.blockchainTxHash}</p>
+              </div>
+
+              {/* Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <button style={{ padding: '16px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 0 20px rgba(0,219,233,0.4)' }}>↗ REPORT</button>
+                <button
+  onClick={() => downloadCertificate(medicine, result, responseTime)}
+  style={{ padding:'16px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'12px', letterSpacing:'0.1em', cursor:'pointer' }}
+>
+  ↓ CERTIFICATE
+</button>
+              </div>
+              <button onClick={() => router.push('/scan')} style={{ width: '100%', padding: '14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#849495', fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 600, cursor: 'pointer', marginBottom: '100px' }}>← SCAN ANOTHER MEDICINE</button>
+            </div>
+          ) : (
+            // Desktop
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', transform: revealed ? 'translateY(0)' : 'translateY(20px)', opacity: revealed ? 1 : 0, transition: 'all 0.6s ease' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button style={{ padding: '14px 28px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 0 24px rgba(0,219,233,0.4)' }}>↗ REPORT</button>
+                  <button
+  onClick={() => downloadCertificate(medicine, result, responseTime)}
+  style={{ padding:'16px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'12px', letterSpacing:'0.1em', cursor:'pointer' }}
+>
+  ↓ CERTIFICATE
+</button>
+                  <button onClick={() => router.push('/scan')} style={{ padding: '14px 28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#849495', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>← SCAN AGAIN</button>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '28px', backdropFilter: 'blur(16px)', position: 'relative', overflow: 'hidden', transform: revealed ? 'translateY(0)' : 'translateY(20px)', opacity: revealed ? 1 : 0, transition: 'all 0.6s ease 0.15s' }}>
+                    <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: `linear-gradient(90deg, transparent, ${resultColor}60, transparent)` }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+                      <div>
+                        <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '28px', color: '#e3e1e9', marginBottom: '6px' }}>{medicine.name}</h2>
+                        <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 600, color: '#849495', letterSpacing: '0.12em' }}>{medicine.genericName?.toUpperCase()}</p>
+                      </div>
+                      <div style={{ background: 'rgba(0,219,233,0.08)', border: '1px solid rgba(0,219,233,0.25)', borderRadius: '10px', padding: '8px 16px' }}>
+                        <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#00dbe9' }}>{medicine.dosage}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                      {[{ label: 'BATCH NUMBER', val: medicine.batchNumber }, { label: 'EXPIRY DATE', val: new Date(medicine.expiryDate).toLocaleDateString('en-US', { month: '2-digit', year: 'numeric' }) }].map((f,i) => (
+                        <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '16px' }}>
+                          <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '8px' }}>{f.label}</p>
+                          <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '20px', fontWeight: 700, color: '#e3e1e9' }}>{f.val}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '16px', marginBottom: '12px' }}>
+                      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '8px' }}>SALT COMPOSITION</p>
+                      <p style={{ fontSize: '14px', color: '#b9cacb', lineHeight: 1.6, fontStyle: 'italic' }}>{medicine.saltComposition}</p>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '8px' }}>MFG. LICENSE</p>
+                        <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '18px', fontWeight: 700, color: '#e3e1e9' }}>{medicine.licenseNumber}</p>
+                      </div>
+                      <span style={{ fontSize: '28px' }}>🛡️</span>
+                    </div>
+                  </div>
+                  <div style={{ background: 'linear-gradient(135deg, rgba(0,219,233,0.06), rgba(0,219,233,0.02))', border: '1px solid rgba(0,219,233,0.15)', borderRadius: '20px', padding: '20px', backdropFilter: 'blur(12px)', transform: revealed ? 'translateY(0)' : 'translateY(20px)', opacity: revealed ? 1 : 0, transition: 'all 0.6s ease 0.3s' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em' }}>BLOCKCHAIN HASH</p>
+                      <span style={{ fontSize: '11px', color: '#00f5a0', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, background: 'rgba(0,245,160,0.08)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(0,245,160,0.2)' }}>✓ IMMUTABLE</span>
+                    </div>
+                    <p style={{ fontFamily: 'monospace', fontSize: '13px', color: '#00dbe9', wordBreak: 'break-all' }}>{medicine.sha256Hash || medicine.blockchainTxHash}</p>
+                  </div>
+                </div>
+                <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '28px', backdropFilter: 'blur(16px)', alignSelf: 'start', transform: revealed ? 'translateX(0)' : 'translateX(20px)', opacity: revealed ? 1 : 0, transition: 'all 0.6s ease 0.2s' }}>
+                  <SupplyChain />
+                  <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(0,245,160,0.05)', border: '1px solid rgba(0,245,160,0.15)', borderRadius: '14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '6px' }}>🔐</div>
+                    <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, color: '#00f5a0', letterSpacing: '0.08em', marginBottom: '4px' }}>CRYPTOGRAPHIC PROOF</p>
+                    <p style={{ fontSize: '11px', color: '#849495' }}>{medicine.verificationCount?.toLocaleString()} verifications • Chain intact</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px 20px', marginBottom: '100px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+            <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '24px', color: '#ff4d6d', marginBottom: '12px' }}>Medicine Not Found</h2>
+            <p style={{ fontSize: '14px', color: '#849495', marginBottom: '24px' }}>{error || 'This medicine is not registered on MediVerify blockchain.'}</p>
+            <button onClick={() => router.push('/scan')} style={{ padding: '14px 28px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>← SCAN AGAIN</button>
+          </div>
+        )}
+      </div>
+      {isMobile && <BottomNav />}
+      <style>{`@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
+}
