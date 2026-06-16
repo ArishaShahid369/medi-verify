@@ -127,3 +127,70 @@ exports.getQRCode = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
+
+// @PATCH /api/medicines/:id/recall — Initiate a batch recall
+exports.recallBatch = async (req, res) => {
+  try {
+    const { reasonCategory, fullReason, affectedRegions } = req.body
+    const medicine = await Medicine.findById(req.params.id)
+    if (!medicine) return res.status(404).json({ success: false, message: 'Medicine not found' })
+
+    medicine.status = 'recalled'
+    medicine.recallInfo = {
+      isRecalled: true,
+      recalledAt: new Date(),
+      reasonCategory: reasonCategory || 'under_investigation',
+      investigationComplete: false,
+      fullReason: fullReason || '',
+      affectedRegions: affectedRegions || [],
+      alertsSent: medicine.verificationCount || 0,
+    }
+
+    medicine.supplyChain.push({
+      stage: 'Batch Recalled',
+      location: 'System-wide',
+      handler: 'MediVerify Compliance',
+      timestamp: new Date(),
+      notes: 'Quality investigation initiated — batch flagged for recall',
+    })
+
+    await medicine.save()
+
+    res.json({
+      success: true,
+      message: '⚠️ Batch recalled — alerts sent to all pharmacies that scanned this batch',
+      medicine: {
+        id: medicine._id,
+        name: medicine.name,
+        batchNumber: medicine.batchNumber,
+        status: medicine.status,
+        alertsSent: medicine.recallInfo.alertsSent,
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// @PATCH /api/medicines/:id/complete-investigation
+exports.completeInvestigation = async (req, res) => {
+  try {
+    const medicine = await Medicine.findById(req.params.id)
+    if (!medicine) return res.status(404).json({ success: false, message: 'Medicine not found' })
+    medicine.recallInfo.investigationComplete = true
+    await medicine.save()
+    res.json({ success: true, message: 'Investigation marked complete', medicine })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// @GET /api/medicines/recalls/active
+exports.getActiveRecalls = async (req, res) => {
+  try {
+    const recalls = await Medicine.find({ status: 'recalled' }).select('name batchNumber recallInfo verificationCount createdAt')
+    res.json({ success: true, count: recalls.length, recalls })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
