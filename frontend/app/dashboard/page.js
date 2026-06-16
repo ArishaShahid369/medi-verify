@@ -133,27 +133,147 @@ function LedgerTable({ tableData }) {
   )
 }
 
-// ── Inventory Section ──
 function InventorySection({ tableData }) {
+  const [medicines, setMedicines] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [recallModal, setRecallModal] = useState(null)
+  const [recallForm, setRecallForm] = useState({ reasonCategory: 'under_investigation', fullReason: '', affectedRegions: '' })
+  const [recalling, setRecalling] = useState(false)
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+
+  useEffect(() => { fetchMedicines() }, [])
+
+  const fetchMedicines = async () => {
+    try {
+      const res = await fetch(`${API_URL}/medicines`)
+      const data = await res.json()
+      if (data.success) setMedicines(data.medicines)
+    } catch (err) {
+      console.error(err)
+    } finally { setLoading(false) }
+  }
+
+  const handleRecall = async () => {
+    if (!recallModal) return
+    setRecalling(true)
+    try {
+      const res = await fetch(`${API_URL}/medicines/${recallModal._id}/recall`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reasonCategory: recallForm.reasonCategory,
+          fullReason: recallForm.fullReason,
+          affectedRegions: recallForm.affectedRegions.split(',').map(r => r.trim()).filter(Boolean),
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setRecallModal(null)
+        setRecallForm({ reasonCategory: 'under_investigation', fullReason: '', affectedRegions: '' })
+        fetchMedicines()
+      }
+    } catch (err) {
+      console.error(err)
+    } finally { setRecalling(false) }
+  }
+
+  const statusColor = s => s==='active'?'#00f5a0':s==='recalled'?'#ff4d6d':s==='flagged'?'#ff9500':'#c5c4de'
+
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
         <div><h2 style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'22px', fontWeight:700, color:'#e3e1e9', marginBottom:'4px' }}>Medicine Inventory</h2><p style={{ fontSize:'13px', color:'#5a6370' }}>All registered medicines on blockchain</p></div>
-        <button style={{ background:'#00dbe9', border:'none', borderRadius:'12px', padding:'12px 24px', color:'#001214', fontFamily:'Space Grotesk, sans-serif', fontSize:'13px', fontWeight:700, cursor:'pointer', boxShadow:'0 0 20px rgba(0,219,233,0.3)' }}>+ Register New Medicine</button>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginBottom:'24px' }}>
-        {[{label:'Total Medicines',val:'4',color:'#00dbe9'},{label:'Active',val:'3',color:'#00f5a0'},{label:'Flagged',val:'1',color:'#ff4d6d'}].map((s,i)=>(
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'16px', marginBottom:'24px' }}>
+        {[
+          { label:'Total Medicines', val:medicines.length, color:'#00dbe9' },
+          { label:'Active', val:medicines.filter(m=>m.status==='active').length, color:'#00f5a0' },
+          { label:'Recalled', val:medicines.filter(m=>m.status==='recalled').length, color:'#ff4d6d' },
+          { label:'Flagged', val:medicines.filter(m=>m.status==='flagged').length, color:'#ff9500' },
+        ].map((s,i)=>(
           <div key={i} style={{ background:'rgba(255,255,255,0.04)', border:`1px solid ${s.color}25`, borderRadius:'16px', padding:'20px', backdropFilter:'blur(12px)' }}>
             <p style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'10px', fontWeight:700, color:'#849495', letterSpacing:'0.12em', marginBottom:'8px' }}>{s.label}</p>
             <div style={{ fontFamily:'Space Grotesk, sans-serif', fontWeight:800, fontSize:'32px', color:s.color }}>{s.val}</div>
           </div>
         ))}
       </div>
-      <LedgerTable tableData={tableData}/>
+
+      {loading ? (
+        <div style={{ textAlign:'center', padding:'40px' }}>
+          <div style={{ width:'32px', height:'32px', borderRadius:'50%', border:'2px solid rgba(0,219,233,0.2)', borderTop:'2px solid #00dbe9', animation:'spin 1s linear infinite', margin:'0 auto' }} />
+        </div>
+      ) : (
+        <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', overflow:'hidden' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 0.8fr 0.8fr 0.6fr', gap:'12px', padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(255,255,255,0.02)' }}>
+            {['MEDICINE','BATCH','DOSAGE','STATUS','ACTION'].map(h=><span key={h} style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'9px', fontWeight:700, color:'#5a6370', letterSpacing:'0.1em' }}>{h}</span>)}
+          </div>
+          {medicines.map((med,i)=>(
+            <div key={med._id} style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 0.8fr 0.8fr 0.6fr', gap:'12px', padding:'14px 20px', borderBottom: i<medicines.length-1?'1px solid rgba(255,255,255,0.04)':'none', alignItems:'center' }}>
+              <span style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'13px', fontWeight:600, color:'#e3e1e9' }}>{med.name}</span>
+              <span style={{ fontFamily:'monospace', fontSize:'12px', color:'#00dbe9' }}>{med.batchNumber}</span>
+              <span style={{ fontSize:'12px', color:'#849495' }}>{med.dosage}</span>
+              <div>
+                <span style={{ background:`${statusColor(med.status)}15`, border:`1px solid ${statusColor(med.status)}40`, borderRadius:'6px', padding:'4px 10px', fontFamily:'Space Grotesk, sans-serif', fontSize:'9px', fontWeight:700, color:statusColor(med.status), textTransform:'uppercase' }}>{med.status}</span>
+              </div>
+              <div>
+                {med.status === 'active' && (
+                  <button onClick={()=>setRecallModal(med)} style={{ background:'rgba(255,77,109,0.1)', border:'1px solid rgba(255,77,109,0.3)', borderRadius:'8px', padding:'6px 12px', color:'#ff4d6d', fontFamily:'Space Grotesk, sans-serif', fontSize:'10px', fontWeight:700, cursor:'pointer' }}>
+                    ⚠️ RECALL
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Recall Modal */}
+      {recallModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:200, padding:'20px' }}>
+          <div style={{ background:'#0d0e13', border:'1px solid rgba(255,77,109,0.3)', borderRadius:'24px', padding:'32px', maxWidth:'480px', width:'100%', maxHeight:'90vh', overflowY:'auto' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px' }}>
+              <span style={{ fontSize:'32px' }}>⚠️</span>
+              <div>
+                <h3 style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'18px', fontWeight:700, color:'#ff4d6d' }}>Recall Batch</h3>
+                <p style={{ fontSize:'12px', color:'#849495' }}>{recallModal.name} — {recallModal.batchNumber}</p>
+              </div>
+            </div>
+
+            <div style={{ background:'rgba(255,77,109,0.06)', border:'1px solid rgba(255,77,109,0.15)', borderRadius:'12px', padding:'14px', marginBottom:'20px' }}>
+              <p style={{ fontSize:'12px', color:'#ff9eae', lineHeight:1.6 }}>
+                🔒 <strong>Zero-Knowledge Privacy:</strong> Public consumers will only see "RECALLED — Do Not Use" until you mark the investigation complete. Full reason stays private during active investigation.
+              </p>
+            </div>
+
+            <label style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'10px', fontWeight:700, color:'#849495', letterSpacing:'0.1em', display:'block', marginBottom:'8px' }}>REASON CATEGORY</label>
+            <select value={recallForm.reasonCategory} onChange={e=>setRecallForm({...recallForm, reasonCategory:e.target.value})} style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'12px', color:'#e3e1e9', marginBottom:'16px', fontFamily:'Inter, sans-serif', fontSize:'13px' }}>
+              <option value="under_investigation">Under Investigation</option>
+              <option value="contamination">Contamination</option>
+              <option value="labeling_error">Labeling Error</option>
+              <option value="efficacy_issue">Efficacy Issue</option>
+              <option value="packaging_defect">Packaging Defect</option>
+            </select>
+
+            <label style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'10px', fontWeight:700, color:'#849495', letterSpacing:'0.1em', display:'block', marginBottom:'8px' }}>INTERNAL REASON (private until investigation complete)</label>
+            <textarea value={recallForm.fullReason} onChange={e=>setRecallForm({...recallForm, fullReason:e.target.value})} placeholder="e.g. Trace contamination found in lot during routine QC re-test" style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'12px', color:'#e3e1e9', marginBottom:'16px', fontFamily:'Inter, sans-serif', fontSize:'13px', minHeight:'70px', resize:'vertical', boxSizing:'border-box' }} />
+
+            <label style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'10px', fontWeight:700, color:'#849495', letterSpacing:'0.1em', display:'block', marginBottom:'8px' }}>AFFECTED REGIONS (comma separated)</label>
+            <input type="text" value={recallForm.affectedRegions} onChange={e=>setRecallForm({...recallForm, affectedRegions:e.target.value})} placeholder="Karachi, Lahore, Islamabad" style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'12px', color:'#e3e1e9', marginBottom:'24px', fontFamily:'Inter, sans-serif', fontSize:'13px', boxSizing:'border-box' }} />
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
+              <button onClick={()=>setRecallModal(null)} style={{ padding:'14px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px', color:'#e3e1e9', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
+              <button onClick={handleRecall} disabled={recalling} style={{ padding:'14px', background:'#ff4d6d', border:'none', borderRadius:'12px', color:'#fff', fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'13px', cursor:'pointer', boxShadow:'0 0 20px rgba(255,77,109,0.3)' }}>
+                {recalling ? '⏳ Recalling...' : '⚠️ Confirm Recall'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
 // ── Batch Release Section ──
 function BatchSection() {
   const [form, setForm] = useState({

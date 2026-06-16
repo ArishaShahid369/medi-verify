@@ -2,6 +2,64 @@ const Medicine = require('../models/Medicine')
 const VerificationLog = require('../models/VerificationLog')
 const crypto = require('crypto')
 
+// ══ AI Risk Engine — Real anomaly detection using verification velocity ══
+async function calculateRiskScore(batchNumber, currentLocation) {
+  const riskFactors = []
+  let score = 0
+
+  // Factor 1: Geographic velocity check (classic anti-clone technique)
+  const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const recentLogs = await VerificationLog.find({
+    batchNumber,
+    createdAt: { $gte: last24h }
+  }).select('deviceInfo createdAt result')
+
+  const distinctLocations = new Set(recentLogs.map(l => l.deviceInfo?.location).filter(Boolean))
+  if (distinctLocations.size >= 3) {
+    score += 35
+    riskFactors.push(`Scanned from ${distinctLocations.size} different locations in 24h — possible clone tags in circulation`)
+  } else if (distinctLocations.size === 2) {
+    score += 15
+    riskFactors.push('Scanned from 2 different locations recently — monitor for clone activity')
+  }
+
+  // Factor 2: Scan frequency spike
+  if (recentLogs.length > 50) {
+    score += 25
+    riskFactors.push(`Unusually high scan volume (${recentLogs.length} scans/24h) — exceeds normal consumer pattern`)
+  } else if (recentLogs.length > 20) {
+    score += 10
+    riskFactors.push('Above-average scan frequency detected')
+  }
+
+  // Factor 3: Prior counterfeit attempts on similar batch ID
+  const counterfeitAttempts = await VerificationLog.countDocuments({
+    batchNumber,
+    result: 'counterfeit'
+  })
+  if (counterfeitAttempts > 0) {
+    score += 20
+    riskFactors.push(`${counterfeitAttempts} prior counterfeit-flagged scan attempt(s) logged for this batch ID`)
+  }
+
+  // Factor 4: Rapid repeat scans (same batch scanned multiple times in short window)
+  const last5min = new Date(Date.now() - 5 * 60 * 1000)
+  const rapidScans = recentLogs.filter(l => new Date(l.createdAt) >= last5min)
+  if (rapidScans.length >= 5) {
+    score += 15
+    riskFactors.push('Multiple rapid scans in last 5 minutes — automated/bot scanning pattern detected')
+  }
+
+  score = Math.min(score, 100)
+
+  const level = score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low'
+  if (riskFactors.length === 0) riskFactors.push('No anomalies detected — verification pattern is normal')
+
+  return { score, level, factors: riskFactors }
+}
+
+module.exports.calculateRiskScore = calculateRiskScore
+
 // @POST /api/verify/scan
 exports.verifyScan = async (req, res) => {
   const startTime = Date.now()
@@ -45,6 +103,14 @@ exports.verifyScan = async (req, res) => {
     const isExpired = new Date(medicine.expiryDate) < new Date()
     const result = medicine.status === 'recalled' ? 'recalled' : isExpired ? 'expired' : 'authentic'
 
+    // Zero-knowledge: only reveal full recall reason if investigation complete
+    let recallPublicInfo = null
+    if (medicine.status === 'recalled') {
+      recallPublicInfo = medicine.recallInfo?.investigationComplete
+        ? { fullyDisclosed: true, reason: medicine.recallInfo.fullReason, category: medicine.recallInfo.reasonCategory }
+        : { fullyDisclosed: false, reason: 'Under active investigation — full details will be disclosed once the compliance review is complete.', category: 'under_investigation' }
+    }
+
     // Update verification count
     await Medicine.findByIdAndUpdate(medicine._id, { $inc: { verificationCount: 1 } })
 
@@ -59,13 +125,14 @@ exports.verifyScan = async (req, res) => {
       blockchainVerified: medicine.isOnChain,
       responseTime,
     })
-
+    const riskAnalysis = await calculateRiskScore(medicine.batchNumber, deviceInfo.location)
     res.json({
       success: true,
       result,
       responseTime,
       medicine: {
         name: medicine.name,
+        recallInfo: recallPublicInfo,
         genericName: medicine.genericName,
         batchNumber: medicine.batchNumber,
         serialNumber: medicine.serialNumber,

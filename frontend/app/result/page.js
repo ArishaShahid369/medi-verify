@@ -13,6 +13,7 @@ export default function ResultPage() {
   const [medicine, setMedicine] = useState(null)
   const [result, setResult] = useState('authentic')
   const [responseTime, setResponseTime] = useState(0)
+  const [riskAnalysis, setRiskAnalysis] = useState(null)
   const [error, setError] = useState(null)
   const [offlineMode, setOfflineMode] = useState(false)
   const [offlineData, setOfflineData] = useState(null)
@@ -86,6 +87,7 @@ export default function ResultPage() {
           setMedicine(data.medicine)
           setResult(data.result)
           setResponseTime(data.responseTime)
+          setRiskAnalysis(data.riskAnalysis)
         } else {
           setError(data.message)
         }
@@ -156,6 +158,43 @@ export default function ResultPage() {
       </div>
     </div>
   )
+
+  const RiskGauge = () => {
+    if (!riskAnalysis || offlineMode) return null
+    const { score, level, factors } = riskAnalysis
+    const gaugeColor = level === 'high' ? '#ff4d6d' : level === 'medium' ? '#ff9500' : '#00f5a0'
+    const rotation = (score / 100) * 180 - 90
+
+    return (
+      <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '24px', marginBottom: '16px', backdropFilter: 'blur(16px)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em' }}>🤖 AI RISK ENGINE</p>
+          <span style={{ background: `${gaugeColor}15`, border: `1px solid ${gaugeColor}40`, borderRadius: '8px', padding: '4px 12px', fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: gaugeColor, textTransform: 'uppercase' }}>{level} RISK</span>
+        </div>
+
+        {/* Gauge */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+          <svg width="160" height="90" viewBox="0 0 160 90">
+            <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" strokeLinecap="round" />
+            <path d="M 10 80 A 70 70 0 0 1 150 80" fill="none" stroke={gaugeColor} strokeWidth="10" strokeLinecap="round" strokeDasharray={`${(score/100)*220} 220`} style={{ transition: 'stroke-dasharray 1s ease' }} />
+            <line x1="80" y1="80" x2={80 + 55*Math.cos((rotation-90)*Math.PI/180)} y2={80 + 55*Math.sin((rotation-90)*Math.PI/180)} stroke={gaugeColor} strokeWidth="3" strokeLinecap="round" style={{ transition: 'all 1s ease' }} />
+            <circle cx="80" cy="80" r="5" fill={gaugeColor} />
+          </svg>
+          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, fontSize: '28px', color: gaugeColor, marginTop: '-8px' }}>{score}<span style={{ fontSize: '14px', color: '#849495' }}>/100</span></div>
+        </div>
+
+        {/* Factors */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {factors.map((f, i) => (
+            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '10px 12px' }}>
+              <span style={{ fontSize: '12px', flexShrink: 0 }}>{level === 'low' ? '✓' : '⚠️'}</span>
+              <p style={{ fontSize: '11px', color: '#b9cacb', lineHeight: 1.5 }}>{f}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const SupplyChain = () => (
     <div>
