@@ -2,6 +2,12 @@ const mongoose = require('mongoose')
 const Medicine = require('../models/Medicine')
 const QRCode = require('qrcode')
 const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+
+// Load private key for digital signatures
+const privateKey = process.env.PRIVATE_KEY || fs.readFileSync(path.join(__dirname, '../private.pem'), 'utf8')
+
 
 exports.registerMedicine = async (req, res) => {
   try {
@@ -32,13 +38,33 @@ exports.registerMedicine = async (req, res) => {
       }]
     })
 
-    // Generate QR Code with medicine data
-    const qrData = JSON.stringify({
-      hash: medicine.sha256Hash,
+    // ══ OFFLINE-FIRST: Create signed payload for offline verification ══
+    const payload = {
+      name: medicine.name,
+      genericName: medicine.genericName,
       batch: medicine.batchNumber,
       serial: medicine.serialNumber,
-      name: medicine.name,
-      verify: `http://localhost:3000/result?hash=${medicine.sha256Hash}`
+      dosage: medicine.dosage,
+      saltComposition: medicine.saltComposition,
+      manufacturer: medicine.manufacturerName,
+      license: medicine.licenseNumber,
+      manufactureDate: medicine.manufactureDate,
+      expiry: medicine.expiryDate,
+      hash: medicine.sha256Hash,
+    }
+
+    // Sign payload with RSA private key (digital signature)
+    const payloadString = JSON.stringify(payload)
+    const signer = crypto.createSign('RSA-SHA256')
+    signer.update(payloadString)
+    signer.end()
+    const signature = signer.sign(privateKey, 'base64')
+
+    // QR contains: full medicine data + cryptographic signature (works offline!)
+    const qrData = JSON.stringify({
+      ...payload,
+      sig: signature,
+      v: 1, // signature version
     })
 
     const qrCode = await QRCode.toDataURL(qrData, {

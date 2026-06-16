@@ -1,4 +1,5 @@
 'use client'
+import { verifyOfflineSignature, isOnline } from '../../lib/offlineVerify'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -52,31 +53,68 @@ export default function ScanPage() {
     }, 40)
   }
 
-  const handleRealScan = async (scannedText) => {
-    setScanStatus('scanning')
-    setScanProgress(0)
-    setCameraMode(false)
-    let searchParam = ''
-    try {
-      const parsed = JSON.parse(scannedText)
-      if (parsed.hash) searchParam = `hash=${parsed.hash}`
-      else if (parsed.batch) searchParam = `batch=${parsed.batch}`
-      else searchParam = `serial=${parsed.serial}`
-    } catch {
-      searchParam = `batch=${scannedText}`
-    }
+const handleRealScan = async (scannedText) => {
+  setScanStatus('scanning')
+  setScanProgress(0)
+  setCameraMode(false)
+
+  let parsed = null
+  try {
+    parsed = JSON.parse(scannedText)
+  } catch {
+    // Plain text — treat as batch number, needs internet
     const pi = setInterval(() => {
       setScanProgress(p => {
         if (p >= 100) {
           clearInterval(pi)
           setScanStatus('found')
-          setTimeout(() => router.push(`/result?${searchParam}`), 600)
+          setTimeout(() => router.push(`/result?batch=${scannedText}`), 600)
           return 100
         }
         return p + 5
       })
     }, 30)
+    return
   }
+
+  // ══ OFFLINE-FIRST: Check connectivity ══
+  if (!isOnline() && parsed.sig) {
+    // No internet — verify using local cryptographic signature
+    const verification = await verifyOfflineSignature(parsed)
+    sessionStorage.setItem('offlineVerification', JSON.stringify(verification))
+
+    const pi = setInterval(() => {
+      setScanProgress(p => {
+        if (p >= 100) {
+          clearInterval(pi)
+          setScanStatus('found')
+          setTimeout(() => router.push('/result?mode=offline'), 600)
+          return 100
+        }
+        return p + 8
+      })
+    }, 25)
+    return
+  }
+
+  // ══ ONLINE: Normal blockchain verification ══
+  let searchParam = ''
+  if (parsed.hash) searchParam = `hash=${parsed.hash}`
+  else if (parsed.batch) searchParam = `batch=${parsed.batch}`
+  else searchParam = `serial=${parsed.serial}`
+
+  const pi = setInterval(() => {
+    setScanProgress(p => {
+      if (p >= 100) {
+        clearInterval(pi)
+        setScanStatus('found')
+        setTimeout(() => router.push(`/result?${searchParam}`), 600)
+        return 100
+      }
+      return p + 5
+    })
+  }, 30)
+}
 
   const handleVerify = () => {
     if (manualCode.trim()) {
@@ -209,7 +247,7 @@ export default function ScanPage() {
           {/* Manual entry */}
           {showManual && (
             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,219,233,0.25)', borderRadius: '16px', padding: '18px', marginBottom: '12px' }}>
-              <label style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em', display: 'block', marginBottom: '10px' }}>BATCH CODE DARJ KAREIN</label>
+              <label style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em', display: 'block', marginBottom: '10px' }}>Enter Batch Code</label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input type="text" placeholder="e.g. M-10293" value={manualCode} onChange={e => setManualCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerify()} style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '11px 14px', color: '#e3e1e9', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none' }} />
                 <button onClick={handleVerify} style={{ padding: '11px 18px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>VERIFY</button>
