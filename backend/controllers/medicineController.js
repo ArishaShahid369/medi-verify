@@ -6,8 +6,9 @@ const fs = require('fs')
 const path = require('path')
 
 // Load private key for digital signatures
-const privateKey = process.env.PRIVATE_KEY || fs.readFileSync(path.join(__dirname, '../private.pem'), 'utf8')
-
+const privateKey = process.env.PRIVATE_KEY
+  ? process.env.PRIVATE_KEY.replace(/\\n/g, '\n')
+  : fs.readFileSync(path.join(__dirname, '../private.pem'), 'utf8')
 
 exports.registerMedicine = async (req, res) => {
   try {
