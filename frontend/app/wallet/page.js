@@ -1,4 +1,7 @@
 'use client'
+import Navbar from '../../components/Navbar'
+import Footer from '../../components/Footer'
+import BottomNav from '../../components/BottomNav'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -19,43 +22,39 @@ export default function WalletPage() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
- const handleConnect = async (wallet) => {
-  setConnecting(wallet)
-  try {
-    const fakeAddress = '0x' + Array.from({length: 12}, () =>
-      Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase()
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
-    const response = await fetch('http://localhost:5000/api/auth/wallet-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletAddress: fakeAddress,
-        role: 'consumer',
-        name: 'MediVerify User'
+  const handleConnect = async (wallet) => {
+    setConnecting(wallet)
+    try {
+      const fakeAddress = '0x' + Array.from({ length: 12 }, () =>
+        Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase()
+
+      const response = await fetch(`${API_URL}/auth/wallet-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: fakeAddress, role: 'consumer', name: 'MediVerify User' })
       })
-    })
+      const data = await response.json()
 
-    const data = await response.json()
-    console.log('API Response:', data)
-
-    if (data.success) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mediverify_token', data.token)
-        localStorage.setItem('mediverify_user', JSON.stringify(data.user))
+      if (data.success) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('mediverify_token', data.token)
+          localStorage.setItem('mediverify_user', JSON.stringify(data.user))
+        }
+        setWalletAddress(fakeAddress)
+        setConnecting(null)
+        setConnected(true)
+        setStep(2)
+      } else {
+        console.error('Login failed:', data.message)
+        setConnecting(null)
       }
-      setWalletAddress(fakeAddress)
-      setConnecting(null)
-      setConnected(true)
-      setStep(2)
-    } else {
-      console.error('Login failed:', data.message)
+    } catch (error) {
+      console.error('Connection error:', error)
       setConnecting(null)
     }
-  } catch (error) {
-    console.error('Connection error:', error)
-    setConnecting(null)
   }
-}
 
   const handleRoleSelect = (role) => {
     setSelectedRole(role)
@@ -81,32 +80,6 @@ export default function WalletPage() {
     { id: 'regulator', icon: '🏛️', title: 'Regulator / Authority', sub: 'Monitor and audit', desc: 'Full audit access, fraud reports, counterfeit alerts across all regions.', color: '#c5c4de' },
   ]
 
-  const Navbar = () => (
-    <nav style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '14px 20px' : '16px 48px', background: 'rgba(10,11,16,0.9)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(0,219,233,0.1)' }}>
-      <button onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', cursor: 'pointer' }}>
-        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(0,219,233,0.25), rgba(0,219,233,0.05))', border: '1px solid rgba(0,219,233,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🔬</div>
-        <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '15px' : '17px', color: '#00dbe9', letterSpacing: '0.08em' }}>MEDI-VERIFY</span>
-      </button>
-      {connected && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,245,160,0.08)', border: '1px solid rgba(0,245,160,0.2)', borderRadius: '10px', padding: '8px 14px' }}>
-          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#00f5a0', boxShadow: '0 0 8px #00f5a0' }} />
-          <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#00f5a0', fontWeight: 700 }}>{walletAddress}</span>
-        </div>
-      )}
-    </nav>
-  )
-
-  const BottomNav = () => (
-    <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '10px 0 18px', background: 'rgba(10,11,16,0.97)', backdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-      {[{ icon: '⌂', label: 'HOME', path: '/' }, { icon: '⊡', label: 'SCAN', path: '/scan' }, { icon: '◫', label: 'HISTORY', path: '/history' }, { icon: '⊞', label: 'BATCHES', path: '/batches' }, { icon: '◈', label: 'WALLET', path: '/wallet' }].map(item => (
-        <button key={item.label} onClick={() => router.push(item.path)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', background: item.label === 'WALLET' ? 'rgba(0,219,233,0.12)' : 'transparent', border: 'none', cursor: 'pointer', padding: '7px 14px', borderRadius: '14px' }}>
-          <span style={{ fontSize: '18px', filter: item.label === 'WALLET' ? 'drop-shadow(0 0 6px rgba(0,219,233,0.9))' : 'none' }}>{item.icon}</span>
-          <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, letterSpacing: '0.09em', color: item.label === 'WALLET' ? '#00dbe9' : '#5a6370' }}>{item.label}</span>
-        </button>
-      ))}
-    </nav>
-  )
-
   // ── Step 1: Choose Wallet ──
   const StepWallet = () => (
     <div>
@@ -119,7 +92,6 @@ export default function WalletPage() {
         <p style={{ fontSize: '14px', color: '#849495', lineHeight: 1.7, maxWidth: '360px', margin: '0 auto' }}>Access the manufacturer dashboard or sign scan reports with your secure Web3 wallet.</p>
       </div>
 
-      {/* Network selector */}
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '28px' }}>
         {[{ id: 'mainnet', label: 'Ethereum Mainnet', dot: '#00f5a0' }, { id: 'sepolia', label: 'Sepolia Testnet', dot: '#00dbe9' }].map(n => (
           <button key={n.id} onClick={() => setNetwork(n.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: network === n.id ? 'rgba(0,219,233,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${network === n.id ? 'rgba(0,219,233,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '999px', padding: '7px 16px', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -129,7 +101,6 @@ export default function WalletPage() {
         ))}
       </div>
 
-      {/* Wallet options */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
         {wallets.map(w => (
           <button key={w.id} onClick={() => handleConnect(w.id)} disabled={connecting !== null} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: connecting === w.id ? `rgba(0,219,233,0.1)` : 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border: `1px solid ${connecting === w.id ? 'rgba(0,219,233,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '16px', padding: '18px 20px', cursor: connecting !== null ? 'not-allowed' : 'pointer', backdropFilter: 'blur(12px)', transition: 'all 0.3s', position: 'relative', overflow: 'hidden' }}>
@@ -153,17 +124,12 @@ export default function WalletPage() {
         ))}
       </div>
 
-      {/* Security note */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(0,219,233,0.04)', border: '1px solid rgba(0,219,233,0.12)', borderRadius: '14px', padding: '16px' }}>
         <span style={{ fontSize: '18px', flexShrink: 0 }}>🔒</span>
         <div>
           <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, color: '#e3e1e9', marginBottom: '4px' }}>Secure Verification</p>
           <p style={{ fontSize: '12px', color: '#849495', lineHeight: 1.6 }}>Your private keys never leave your device. Connection is encrypted and peer-to-peer.</p>
         </div>
-      </div>
-
-      <div style={{ textAlign: 'center', marginTop: '20px' }}>
-        <span style={{ fontSize: '12px', color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, cursor: 'pointer', borderBottom: '1px solid rgba(0,219,233,0.3)', paddingBottom: '2px' }}>WHAT IS A WALLET?</span>
       </div>
     </div>
   )
@@ -176,7 +142,6 @@ export default function WalletPage() {
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00f5a0', boxShadow: '0 0 8px #00f5a0' }} />
           <span style={{ fontSize: '11px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: '#00f5a0', letterSpacing: '0.14em' }}>STEP 2 OF 2 — SELECT YOUR ROLE</span>
         </div>
-        {/* Connected badge */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0,245,160,0.06)', border: '1px solid rgba(0,245,160,0.2)', borderRadius: '12px', padding: '10px 18px', marginBottom: '20px' }}>
           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f5a0', boxShadow: '0 0 10px #00f5a0' }} />
           <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#00f5a0', fontWeight: 700 }}>{walletAddress}</span>
@@ -247,8 +212,7 @@ export default function WalletPage() {
       <div style={{ minHeight: '100vh', background: '#0A0B10', fontFamily: 'Inter, sans-serif' }}>
         <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(0,219,233,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
         <Navbar />
-        <div style={{ padding: '32px 20px', maxWidth: '480px', margin: '0 auto', position: 'relative', zIndex: 1, paddingBottom: '120px' }}>
-          {/* Progress bar */}
+        <div style={{ padding: '32px 20px', maxWidth: '480px', margin: '0 auto', position: 'relative', zIndex: 1, paddingBottom: '40px' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
             {[1, 2, 3].map(s => (
               <div key={s} style={{ flex: 1, height: '3px', borderRadius: '999px', background: step >= s ? '#00dbe9' : 'rgba(255,255,255,0.08)', boxShadow: step >= s ? '0 0 8px rgba(0,219,233,0.5)' : 'none', transition: 'all 0.4s ease' }} />
@@ -256,6 +220,7 @@ export default function WalletPage() {
           </div>
           {content}
         </div>
+        <Footer />
         <BottomNav />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -269,7 +234,6 @@ export default function WalletPage() {
       <Navbar />
       <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', padding: '60px 80px', maxWidth: '1200px', margin: '0 auto', alignItems: 'center', minHeight: 'calc(100vh - 70px)' }}>
 
-        {/* LEFT — Info panel */}
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0,219,233,0.06)', border: '1px solid rgba(0,219,233,0.2)', borderRadius: '999px', padding: '6px 16px', marginBottom: '28px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00dbe9', boxShadow: '0 0 8px #00dbe9' }} />
@@ -280,7 +244,6 @@ export default function WalletPage() {
           </h1>
           <p style={{ fontSize: '15px', color: '#849495', lineHeight: 1.8, maxWidth: '420px', marginBottom: '40px' }}>Secure, decentralized authentication. Your wallet is your identity — no passwords, no accounts, just cryptographic proof.</p>
 
-          {/* Feature list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
               { icon: '🔐', title: 'Zero-Knowledge Auth', desc: 'Your private keys never leave your device' },
@@ -299,10 +262,8 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {/* RIGHT — Wallet form */}
         <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '28px', padding: '36px', backdropFilter: 'blur(20px)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(0,219,233,0.4), transparent)' }} />
-          {/* Progress */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
             {[1, 2, 3].map(s => (
               <div key={s} style={{ flex: 1, height: '3px', borderRadius: '999px', background: step >= s ? '#00dbe9' : 'rgba(255,255,255,0.08)', boxShadow: step >= s ? '0 0 8px rgba(0,219,233,0.5)' : 'none', transition: 'all 0.4s ease' }} />
@@ -311,6 +272,7 @@ export default function WalletPage() {
           {content}
         </div>
       </div>
+      <Footer />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   )

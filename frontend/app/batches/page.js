@@ -1,4 +1,7 @@
 'use client'
+import Navbar from '../../components/Navbar'
+import Footer from '../../components/Footer'
+import BottomNav from '../../components/BottomNav'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -42,13 +45,7 @@ export default function BatchesPage() {
       <div style={{ position:'fixed', top:'20%', left:'50%', transform:'translateX(-50%)', width:'500px', height:'300px', background:'radial-gradient(ellipse, rgba(0,219,233,0.05) 0%, transparent 70%)', pointerEvents:'none', zIndex:0 }} />
 
       {/* Navbar */}
-      <nav style={{ position:'sticky', top:0, zIndex:50, display:'flex', justifyContent:'space-between', alignItems:'center', padding:'14px 20px', background:'rgba(10,11,16,0.9)', backdropFilter:'blur(24px)', borderBottom:'1px solid rgba(0,219,233,0.1)' }}>
-        <button onClick={() => router.push('/')} style={{ display:'flex', alignItems:'center', gap:'10px', background:'none', border:'none', cursor:'pointer' }}>
-          <div style={{ width:'32px', height:'32px', borderRadius:'10px', background:'linear-gradient(135deg, rgba(0,219,233,0.25), rgba(0,219,233,0.05))', border:'1px solid rgba(0,219,233,0.35)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px' }}>🔬</div>
-          <span style={{ fontFamily:'Space Grotesk, sans-serif', fontWeight:700, fontSize:'15px', color:'#00dbe9', letterSpacing:'0.08em' }}>MEDI-VERIFY</span>
-        </button>
-        <button onClick={() => router.push('/dashboard')} style={{ background:'rgba(0,219,233,0.08)', border:'1px solid rgba(0,219,233,0.3)', borderRadius:'10px', padding:'8px 16px', color:'#00dbe9', fontFamily:'Space Grotesk, sans-serif', fontSize:'11px', fontWeight:700, cursor:'pointer' }}>⊞ DASHBOARD</button>
-      </nav>
+     <Navbar />
 
       <div style={{ padding:'28px 20px', maxWidth:'1000px', margin:'0 auto', position:'relative', zIndex:1 }}>
 
@@ -169,14 +166,8 @@ export default function BatchesPage() {
       </div>
 
       {/* Bottom Nav */}
-      <nav style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:100, display:'flex', justifyContent:'space-around', alignItems:'center', padding:'10px 0 18px', background:'rgba(10,11,16,0.97)', backdropFilter:'blur(24px)', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
-        {[{icon:'⌂',label:'HOME',path:'/'},{icon:'⊡',label:'SCAN',path:'/scan'},{icon:'◫',label:'HISTORY',path:'/history'},{icon:'⊞',label:'BATCHES',path:'/batches'},{icon:'◈',label:'WALLET',path:'/wallet'}].map(item=>(
-          <button key={item.label} onClick={()=>router.push(item.path)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', background:item.label==='BATCHES'?'rgba(0,219,233,0.12)':'transparent', border:'none', cursor:'pointer', padding:'7px 14px', borderRadius:'14px' }}>
-            <span style={{ fontSize:'18px', filter:item.label==='BATCHES'?'drop-shadow(0 0 6px rgba(0,219,233,0.9))':'none' }}>{item.icon}</span>
-            <span style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'9px', fontWeight:700, letterSpacing:'0.09em', color:item.label==='BATCHES'?'#00dbe9':'#5a6370' }}>{item.label}</span>
-          </button>
-        ))}
-      </nav>
+      <Footer />
+<BottomNav />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
