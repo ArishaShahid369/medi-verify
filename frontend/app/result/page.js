@@ -1,14 +1,14 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
+
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '../../components/Navbar'
 import Footer from '../../components/Footer'
 import BottomNav from '../../components/BottomNav'
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 import { downloadCertificate } from '../../components/Certificate'
 
-export default function ResultPage() {
+function ResultContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isMobile, setIsMobile] = useState(true)
@@ -394,5 +394,21 @@ export default function ResultPage() {
       {isMobile && <BottomNav />}
       <style>{`@keyframes orbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
+  )
+}
+
+export default function ResultPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight:'100vh', background:'#0A0B10', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ width:'48px', height:'48px', borderRadius:'50%', border:'3px solid rgba(0,219,233,0.2)', borderTop:'3px solid #00dbe9', animation:'spin 1s linear infinite', margin:'0 auto 16px' }} />
+          <p style={{ color:'#00dbe9', fontFamily:'Space Grotesk, sans-serif', fontSize:'14px' }}>Verifying...</p>
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    }>
+      <ResultContent />
+    </Suspense>
   )
 }
