@@ -82,11 +82,15 @@ function ResultContent() {
           body.hash = 'a8f2e4c9d1b7f5e3a2c6d8f4b1e9a7c5d3f2b8e6a4c1d9f7b5e3a2c8d6f4b9e1'
         }
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 10000)
         const res = await fetch(`${API_URL}/verify/scan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
         })
+clearTimeout(timeout)
         const data = await res.json()
         if (data.success) {
           setMedicine(data.medicine)

@@ -51,10 +51,10 @@ export default function WalletPage() {
         setConnecting(null)
       }
     } catch (error) {
-      console.error('Connection error:', error)
-      setConnecting(null)
-    }
-  }
+  console.error('Connection error:', error)
+  setConnecting(null)
+  alert('Backend connection failed. Please try again!')
+}
 
   const handleRoleSelect = (role) => {
     setSelectedRole(role)
