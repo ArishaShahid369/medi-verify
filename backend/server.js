@@ -10,7 +10,19 @@ const app = express()
 // ══ Security ══
 app.use(helmet())
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    const allowed = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://medi-verify-livid.vercel.app',
+      process.env.FRONTEND_URL,
+    ]
+    if (!origin || allowed.some(o => o && origin.startsWith(o.replace(/\/$/, '')))) {
+      callback(null, true)
+    } else {
+      callback(null, true)
+    }
+  },
   credentials: true
 }))
 
@@ -48,7 +60,7 @@ app.get('/', (req, res) => {
   })
 })
 
-// ══ 404 Handler (FIXED) ══
+// ══ 404 Handler ══
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' })
 })
