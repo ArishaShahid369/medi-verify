@@ -7,13 +7,19 @@ require('dotenv').config()
 
 const app = express()
 
-// ══ Security ══
-app.use(helmet())
+// ══ CORS — Sabse Pehle! ══
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false
+}))
+app.options('*', cors())
+
+// ══ Security ══
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
 }))
 
 // ══ Rate Limiting ══
