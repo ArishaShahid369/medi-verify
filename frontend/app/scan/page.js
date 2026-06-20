@@ -89,7 +89,14 @@ export default function ScanPage() {
           if (p >= 100) {
             clearInterval(pi)
             setScanStatus('found')
-            setTimeout(() => router.push('/result?mode=offline'), 600)
+            setTimeout(() => {
+  const data = sessionStorage.getItem('offlineVerification')
+  if (data) {
+    router.push('/result?mode=offline')
+  } else {
+    router.push('/result?batch=M-10293')
+  }
+}, 600)
             return 100
           }
           return p + 8
