@@ -14,8 +14,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false
 }))
-app.options('*', cors())
-
 // ══ Security ══
 app.use(helmet({
   crossOriginResourcePolicy: false,
