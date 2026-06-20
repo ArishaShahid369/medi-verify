@@ -10,20 +10,10 @@ const app = express()
 // ══ Security ══
 app.use(helmet())
 app.use(cors({
-  origin: function(origin, callback) {
-    const allowed = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://medi-verify-livid.vercel.app',
-      process.env.FRONTEND_URL,
-    ]
-    if (!origin || allowed.some(o => o && origin.startsWith(o.replace(/\/$/, '')))) {
-      callback(null, true)
-    } else {
-      callback(null, true)
-    }
-  },
-  credentials: true
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
 }))
 
 // ══ Rate Limiting ══
