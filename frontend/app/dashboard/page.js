@@ -294,7 +294,8 @@ function BatchSection() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:5000/api/medicines/register', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+      const res = await fetch(`${API_URL}/medicines/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -303,10 +304,10 @@ function BatchSection() {
       if (data.success) {
         setResult(data.medicine)
       } else {
-        setError(data.message)
+        setError(data.message || 'Registration failed')
       }
     } catch (err) {
-      setError('Server connection failed!')
+      setError('Server is starting up — please wait 30 seconds and try again!')
     }
     setLoading(false)
   }
@@ -445,7 +446,8 @@ function SupplyChainSection() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/verify/supply-chain')
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+    fetch(`${API_URL}/verify/supply-chain`)
       .then(r => r.json())
       .then(data => {
         if (data.success) setChains(data.medicines)
@@ -570,6 +572,14 @@ export default function DashboardPage() {
   const [activeNav, setActiveNav] = useState('overview')
   const [time, setTime] = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  // ↓↓↓ YEH NAYA ADD KARO ↓↓↓
+  useEffect(() => {
+    const token = localStorage.getItem('mediverify_token')
+    if (!token) {
+      router.push('/wallet')
+    }
+  }, [])
+  // ↑↑↑ YEH NAYA ADD KARO ↑↑↑
 
   const tableData = [
     { id:'#BXC-0021', name:'Paracet-Max', salt:'C8H9NO2 (Active)', ts:'2023-11-24 09:12', hash:'0x4a9d...f281e', status:'VERIFIED' },
