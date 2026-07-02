@@ -1,15 +1,13 @@
-import type { HardhatConfig } from "hardhat/types/config";
+import type { HardhatUserConfig } from "hardhat/config";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const config: HardhatConfig = {
-  solidity: {
-    version: "0.8.19",
-  },
+const config: HardhatUserConfig = {
+  solidity: "0.8.19",
   networks: {
     sepolia: {
       type: "http",
-      url: process.env.SEPOLIA_RPC_URL || "https://rpc.sepolia.org",
+      url: process.env.SEPOLIA_RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     }
   }

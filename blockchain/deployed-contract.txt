@@ -1,0 +1,6 @@
+MediVerify Smart Contract — Ethereum Sepolia Testnet
+Contract Address: 0x96662c29a7f56C6817065749c35E7F95AE83B971
+Deployer: 0x4CCE344cf80791AddE9F2a711AC115117Fbeef2E
+Network: Ethereum Sepolia Testnet
+Deployed: July 2, 2026
+Etherscan: https://sepolia.etherscan.io/address/0x96662c29a7f56C6817065749c35E7F95AE83B971
