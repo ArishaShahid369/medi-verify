@@ -621,6 +621,7 @@ export default function DashboardPage() {
     { id:'batch', icon:'⚙', label:'BATCH RELEASE' },
     { id:'supply', icon:'⛓', label:'SUPPLY CHAIN' },
     { id:'settings', icon:'⚙', label:'SETTINGS' },
+    { id:'heatmap', icon:'🗺️', label:'HEATMAP' },
   ]
 
   useEffect(() => {
@@ -640,6 +641,7 @@ export default function DashboardPage() {
       case 'batch': return <BatchSection/>
       case 'supply': return <SupplyChainSection/>
       case 'settings': return <SettingsSection/>
+      case 'heatmap': return <HeatmapSection/>
       default: return <OverviewSection stats={stats} tableData={tableData} time={time}/>
     }
   }
@@ -751,6 +753,21 @@ export default function DashboardPage() {
   </div>
 )}
 <div style={{ padding:'28px 32px' }}>{renderContent()}</div>      </main>
+    </div>
+  )
+}
+
+function HeatmapSection() {
+  return (
+    <div>
+      <div style={{ marginBottom:'24px' }}>
+        <h2 style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'22px', fontWeight:700, color:'#e3e1e9', marginBottom:'4px' }}>Fake Medicine Heatmap</h2>
+        <p style={{ fontSize:'13px', color:'#5a6370' }}>Real-time counterfeit detection across Pakistan</p>
+      </div>
+      <iframe
+        src="/heatmap"
+        style={{ width:'100%', height:'700px', border:'none', borderRadius:'20px' }}
+      />
     </div>
   )
 }
