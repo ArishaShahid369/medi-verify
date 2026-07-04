@@ -75,11 +75,14 @@ exports.verifyScan = async (req, res) => {
     if (!medicine && batchNumber) medicine = await Medicine.findOne({ batchNumber }).populate('manufacturer', 'name companyName')
     if (!medicine && serialNumber) medicine = await Medicine.findOne({ serialNumber }).populate('manufacturer', 'name companyName')
 
-    const responseTime = Date.now() - startTime
     const deviceInfo = {
-      ip: req.ip || req.connection.remoteAddress,
-      userAgent: req.headers['user-agent'],
-      location: req.headers['x-forwarded-for'] || 'Unknown',
+    ip: req.ip || req.connection.remoteAddress,
+    userAgent: req.headers['user-agent'],
+    location: req.body.location || req.headers['x-forwarded-for'] || 'Unknown',
+    coordinates: {
+    lat: req.body.lat || null,
+    lng: req.body.lng || null,
+    }
     }
 
     if (!medicine) {
@@ -193,6 +196,58 @@ exports.getSupplyChain = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(10)
     res.json({ success: true, medicines })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+// @GET /api/verify/heatmap
+exports.getHeatmapData = async (req, res) => {
+  try {
+    const fakeScans = await VerificationLog.find({
+      result: { $in: ['counterfeit', 'recalled', 'expired'] }
+    })
+    .select('deviceInfo result createdAt batchNumber')
+    .sort({ createdAt: -1 })
+    .limit(500)
+
+    const realPoints = fakeScans
+      .filter(s => s.deviceInfo?.coordinates?.lat)
+      .map(s => ({
+        lat: s.deviceInfo.coordinates.lat,
+        lng: s.deviceInfo.coordinates.lng,
+        result: s.result,
+        location: s.deviceInfo.location,
+        batch: s.batchNumber,
+        date: s.createdAt,
+      }))
+
+    const demoPoints = [
+      { lat: 24.8607, lng: 67.0011, result: 'counterfeit', location: 'Karachi, Sindh', batch: 'FAKE-001', date: new Date() },
+      { lat: 24.9000, lng: 67.0500, result: 'counterfeit', location: 'Karachi, Sindh', batch: 'FAKE-002', date: new Date() },
+      { lat: 24.8200, lng: 66.9800, result: 'counterfeit', location: 'Karachi, Sindh', batch: 'FAKE-003', date: new Date() },
+      { lat: 31.5204, lng: 74.3587, result: 'counterfeit', location: 'Lahore, Punjab', batch: 'FAKE-004', date: new Date() },
+      { lat: 31.5500, lng: 74.4000, result: 'recalled', location: 'Lahore, Punjab', batch: 'BXC-0023', date: new Date() },
+      { lat: 31.4900, lng: 74.3200, result: 'counterfeit', location: 'Lahore, Punjab', batch: 'FAKE-005', date: new Date() },
+      { lat: 33.6844, lng: 73.0479, result: 'counterfeit', location: 'Islamabad', batch: 'FAKE-006', date: new Date() },
+      { lat: 33.7000, lng: 73.0600, result: 'expired', location: 'Islamabad', batch: 'EXP-001', date: new Date() },
+      { lat: 34.0151, lng: 71.5249, result: 'counterfeit', location: 'Peshawar, KPK', batch: 'FAKE-007', date: new Date() },
+      { lat: 25.3792, lng: 68.3683, result: 'counterfeit', location: 'Hyderabad, Sindh', batch: 'FAKE-008', date: new Date() },
+      { lat: 30.1798, lng: 66.9750, result: 'counterfeit', location: 'Quetta, Balochistan', batch: 'FAKE-009', date: new Date() },
+      { lat: 32.1617, lng: 74.1883, result: 'recalled', location: 'Gujranwala, Punjab', batch: 'BXC-0023', date: new Date() },
+      { lat: 26.2442, lng: 68.4100, result: 'counterfeit', location: 'Sukkur, Sindh', batch: 'FAKE-010', date: new Date() },
+    ]
+
+    const allPoints = [...realPoints, ...demoPoints]
+
+    res.json({
+      success: true,
+      total: allPoints.length,
+      counterfeit: allPoints.filter(p => p.result === 'counterfeit').length,
+      recalled: allPoints.filter(p => p.result === 'recalled').length,
+      expired: allPoints.filter(p => p.result === 'expired').length,
+      points: allPoints,
+    })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
   }

@@ -20,6 +20,7 @@ export default function Navbar() {
     { label: 'Scan', path: '/scan' },
     { label: 'Batches', path: '/batches' },
     { label: 'History', path: '/history' },
+     { label: 'Heatmap', path: '/heatmap' },
   ]
 
   // ══ MOBILE ══
