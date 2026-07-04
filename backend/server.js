@@ -43,6 +43,40 @@ app.use('/api/medicines', require('./routes/medicineRoutes'))
 app.use('/api/verify', require('./routes/verifyRoutes'))
 app.use('/api/batches', require('./routes/batchRoutes'))
 
+// ══ Expiry Alert Cron Job ══
+const cron = require('node-cron')
+const Medicine = require('./models/Medicine')
+
+// Har raat 12 baje run hoga
+cron.schedule('0 0 * * *', async () => {
+  console.log('🕐 Running expiry check...')
+  try {
+    const thirtyDaysFromNow = new Date()
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+
+    // Expire hone wali medicines update karo
+    const expiringSoon = await Medicine.find({
+      expiryDate: { $lte: thirtyDaysFromNow },
+      status: 'active'
+    })
+
+    // Already expired medicines ko EXPIRED mark karo
+    const alreadyExpired = await Medicine.updateMany(
+      {
+        expiryDate: { $lt: new Date() },
+        status: 'active'
+      },
+      { $set: { status: 'expired' } }
+    )
+
+    console.log(`✅ Expiry check done: ${expiringSoon.length} expiring soon, ${alreadyExpired.modifiedCount} marked expired`)
+  } catch (err) {
+    console.error('❌ Expiry check error:', err.message)
+  }
+})
+
+console.log('⏰ Expiry alert cron job scheduled!')
+
 // ══ Health Check ══
 app.get('/', (req, res) => {
   res.json({

@@ -200,3 +200,46 @@ exports.getActiveRecalls = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
+
+// @GET /api/medicines/expiry-alerts
+exports.getExpiryAlerts = async (req, res) => {
+  try {
+    const now = new Date()
+    const thirtyDays = new Date()
+    thirtyDays.setDate(thirtyDays.getDate() + 30)
+    const sixtyDays = new Date()
+    sixtyDays.setDate(sixtyDays.getDate() + 60)
+
+    const critical = await Medicine.find({
+      expiryDate: { $gte: now, $lte: thirtyDays },
+      status: 'active'
+    }).select('name batchNumber expiryDate dosage manufacturerName')
+
+    const warning = await Medicine.find({
+      expiryDate: { $gt: thirtyDays, $lte: sixtyDays },
+      status: 'active'
+    }).select('name batchNumber expiryDate dosage manufacturerName')
+
+    const expired = await Medicine.find({
+      expiryDate: { $lt: now },
+      status: { $ne: 'recalled' }
+    }).select('name batchNumber expiryDate dosage manufacturerName')
+
+    const getDaysLeft = (date) => Math.ceil((new Date(date) - now) / (1000 * 60 * 60 * 24))
+
+    res.json({
+      success: true,
+      summary: {
+        critical: critical.length,
+        warning: warning.length,
+        expired: expired.length,
+        total: critical.length + warning.length + expired.length
+      },
+      critical: critical.map(m => ({ ...m.toObject(), daysLeft: getDaysLeft(m.expiryDate) })),
+      warning: warning.map(m => ({ ...m.toObject(), daysLeft: getDaysLeft(m.expiryDate) })),
+      expired: expired.map(m => ({ ...m.toObject(), daysLeft: getDaysLeft(m.expiryDate) })),
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}

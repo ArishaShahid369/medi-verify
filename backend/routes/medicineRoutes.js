@@ -8,6 +8,7 @@ router.get('/', medicineController.getMedicines)
 router.get('/recalls/active', medicineController.getActiveRecalls)
 router.get('/:id', medicineController.getMedicine)
 router.get('/:id/qr', medicineController.getQRCode)
+router.get('/expiry-alerts', medicineController.getExpiryAlerts)
 router.patch('/:id/recall', medicineController.recallBatch)
 router.patch('/:id/complete-investigation', medicineController.completeInvestigation)
 
