@@ -213,15 +213,13 @@ function InventorySection({ tableData }) {
             <div key={med._id} style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 0.8fr 0.8fr 0.6fr', gap:'12px', padding:'14px 20px', borderBottom: i<medicines.length-1?'1px solid rgba(255,255,255,0.04)':'none', alignItems:'center' }}>
               <span style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'13px', fontWeight:600, color:'#e3e1e9' }}>{med.name}</span>
               <span style={{ fontFamily:'monospace', fontSize:'12px', color:'#00dbe9' }}>{med.batchNumber}</span>
-              {/* Expiry badge */}
-        {med.expiryDate && (() => {
-        const daysLeft = Math.ceil((new Date(med.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
-        if (daysLeft < 0) return <span style={{ background:'rgba(255,77,109,0.1)', border:'1px solid rgba(255,77,109,0.3)', borderRadius:'4px', padding:'2px 6px', fontSize:'9px', color:'#ff4d6d', fontWeight:700, marginLeft:'6px' }}>EXPIRED</span>
-        if (daysLeft <= 30) return <span style={{ background:'rgba(255,77,109,0.1)', border:'1px solid rgba(255,77,109,0.3)', borderRadius:'4px', padding:'2px 6px', fontSize:'9px', color:'#ff4d6d', fontWeight:700, marginLeft:'6px' }}>{daysLeft}d LEFT</span>
-        if (daysLeft <= 60) return <span style={{ background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.3)', borderRadius:'4px', padding:'2px 6px', fontSize:'9px', color:'#ff9500', fontWeight:700, marginLeft:'6px' }}>{daysLeft}d LEFT</span>
-        return null
-        })
-        ()}
+              {med.expiryDate && (() => {
+                const daysLeft = Math.ceil((new Date(med.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+                if (daysLeft < 0) return <span style={{ background:'rgba(255,77,109,0.1)', border:'1px solid rgba(255,77,109,0.3)', borderRadius:'4px', padding:'2px 6px', fontSize:'9px', color:'#ff4d6d', fontWeight:700, marginLeft:'6px' }}>EXPIRED</span>
+                if (daysLeft <= 30) return <span style={{ background:'rgba(255,77,109,0.1)', border:'1px solid rgba(255,77,109,0.3)', borderRadius:'4px', padding:'2px 6px', fontSize:'9px', color:'#ff4d6d', fontWeight:700, marginLeft:'6px' }}>{daysLeft}d LEFT</span>
+                if (daysLeft <= 60) return <span style={{ background:'rgba(255,149,0,0.1)', border:'1px solid rgba(255,149,0,0.3)', borderRadius:'4px', padding:'2px 6px', fontSize:'9px', color:'#ff9500', fontWeight:700, marginLeft:'6px' }}>{daysLeft}d LEFT</span>
+                return null
+              })()}
               <span style={{ fontSize:'12px', color:'#849495' }}>{med.dosage}</span>
               <div>
                 <span style={{ background:`${statusColor(med.status)}15`, border:`1px solid ${statusColor(med.status)}40`, borderRadius:'6px', padding:'4px 10px', fontFamily:'Space Grotesk, sans-serif', fontSize:'9px', fontWeight:700, color:statusColor(med.status), textTransform:'uppercase' }}>{med.status}</span>
@@ -283,6 +281,7 @@ function InventorySection({ tableData }) {
     </div>
   )
 }
+
 // ── Batch Release Section ──
 function BatchSection() {
   const [form, setForm] = useState({
@@ -369,7 +368,6 @@ function BatchSection() {
         <h3 style={{ fontFamily:'Space Grotesk, sans-serif', fontSize:'22px', fontWeight:700, color:'#00f5a0', marginBottom:'6px' }}>Medicine Registered!</h3>
         <p style={{ fontSize:'13px', color:'#849495', marginBottom:'20px' }}>Successfully saved to blockchain database</p>
 
-        {/* QR Code Display */}
         <div style={{ background:'white', padding:'20px', borderRadius:'16px', display:'inline-block', marginBottom:'20px', boxShadow:'0 0 30px rgba(0,219,233,0.2)' }}>
           <img src={result.qrCode} alt="QR Code" style={{ width:'200px', height:'200px', display:'block' }} />
         </div>
@@ -503,7 +501,6 @@ function SupplyChainSection() {
             </div>
           </div>
 
-          {/* Timeline */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0', overflowX: 'auto', paddingBottom: '8px' }}>
             {(med.supplyChain || []).map((step, si) => (
               <div key={si} style={{ display: 'flex', alignItems: 'center' }}>
@@ -526,7 +523,6 @@ function SupplyChainSection() {
               </div>
             ))}
 
-            {/* Consumer (Live) */}
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, rgba(0,219,233,0.4), rgba(0,219,233,0.1))', flexShrink: 0 }} />
               <div style={{ textAlign: 'center', minWidth: '100px', padding: '0 8px' }}>
@@ -582,24 +578,22 @@ export default function DashboardPage() {
   const [time, setTime] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [expiryAlerts, setExpiryAlerts] = useState(null)
-  // ↓↓↓ YEH NAYA ADD KARO ↓↓↓
+
+  // FIX: Dono hooks ko flat parallel levels par alag alag handle kiya hai.
   useEffect(() => {
     const token = localStorage.getItem('mediverify_token')
     if (!token) {
       router.push('/wallet')
     }
+  }, [router])
 
-    useEffect(() => {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-  fetch(`${API_URL}/medicines/expiry-alerts`)
-    .then(r => r.json())
-    .then(data => { if (data.success) setExpiryAlerts(data) })
-    .catch(err => console.error(err))
-  }, 
-  [])
-  },
-   [])
-  // ↑↑↑ YEH NAYA ADD KARO ↑↑↑
+  useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+    fetch(`${API_URL}/medicines/expiry-alerts`)
+      .then(r => r.json())
+      .then(data => { if (data.success) setExpiryAlerts(data) })
+      .catch(err => console.error(err))
+  }, [])
 
   const tableData = [
     { id:'#BXC-0021', name:'Paracet-Max', salt:'C8H9NO2 (Active)', ts:'2023-11-24 09:12', hash:'0x4a9d...f281e', status:'VERIFIED' },
@@ -658,7 +652,6 @@ export default function DashboardPage() {
             <span style={{ fontFamily:'monospace', fontSize:'11px', color:'#00dbe9' }}>PHARMA_01</span>
           </div>
         </nav>
-        {/* Mobile nav tabs */}
         <div style={{ display:'flex', overflowX:'auto', padding:'12px 16px', gap:'8px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(10,11,16,0.8)' }}>
           {navItems.map(item=>(
             <button key={item.id} onClick={()=>setActiveNav(item.id)} style={{ flexShrink:0, display:'flex', alignItems:'center', gap:'6px', padding:'8px 14px', borderRadius:'10px', background:activeNav===item.id?'rgba(0,219,233,0.12)':'rgba(255,255,255,0.04)', border:`1px solid ${activeNav===item.id?'rgba(0,219,233,0.3)':'rgba(255,255,255,0.07)'}`, cursor:'pointer' }}>
@@ -673,7 +666,6 @@ export default function DashboardPage() {
 
   return (
     <div style={{ minHeight:'100vh', background:'#0A0B10', fontFamily:'Inter, sans-serif', display:'flex' }}>
-      {/* Sidebar */}
       <aside style={{ width:'240px', minHeight:'100vh', background:'rgba(13,14,19,0.98)', borderRight:'1px solid rgba(255,255,255,0.06)', display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:50 }}>
         <div style={{ padding:'24px 20px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
@@ -700,7 +692,6 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main content */}
       <main style={{ marginLeft:'240px', flex:1, padding:'0', minHeight:'100vh' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'20px 32px', borderBottom:'1px solid rgba(255,255,255,0.06)', background:'rgba(10,11,16,0.8)', backdropFilter:'blur(20px)', position:'sticky', top:0, zIndex:40 }}>
           <div>
@@ -720,39 +711,40 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-{/* Expiry Alert Banner */}
-{expiryAlerts && expiryAlerts.summary.total > 0 && (
-  <div style={{ padding: '16px 32px 0' }}>
-    {expiryAlerts.summary.critical > 0 && (
-      <div style={{ background: 'rgba(255,77,109,0.08)', border: '1px solid rgba(255,77,109,0.3)', borderRadius: '14px', padding: '14px 20px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <span style={{ fontSize: '24px' }}>🚨</span>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#ff4d6d', marginBottom: '4px' }}>
-            CRITICAL: {expiryAlerts.summary.critical} medicine{expiryAlerts.summary.critical > 1 ? 's' : ''} expiring within 30 days!
-          </p>
-          <p style={{ fontSize: '12px', color: '#849495' }}>
-            {expiryAlerts.critical.map(m => `${m.name} (${m.batchNumber}) — ${m.daysLeft} days left`).join(' • ')}
-          </p>
-        </div>
-        <button onClick={() => setActiveNav('inventory')} style={{ background: '#ff4d6d', border: 'none', borderRadius: '8px', padding: '8px 16px', color: '#fff', fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>VIEW →</button>
-      </div>
-    )}
-    {expiryAlerts.summary.warning > 0 && (
-      <div style={{ background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.3)', borderRadius: '14px', padding: '14px 20px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <span style={{ fontSize: '24px' }}>⚠️</span>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#ff9500', marginBottom: '4px' }}>
-            WARNING: {expiryAlerts.summary.warning} medicine{expiryAlerts.summary.warning > 1 ? 's' : ''} expiring within 60 days
-          </p>
-          <p style={{ fontSize: '12px', color: '#849495' }}>
-            {expiryAlerts.warning.map(m => `${m.name} — ${m.daysLeft} days left`).join(' • ')}
-          </p>
-        </div>
-      </div>
-    )}
-  </div>
-)}
-<div style={{ padding:'28px 32px' }}>{renderContent()}</div>      </main>
+
+        {expiryAlerts && expiryAlerts.summary.total > 0 && (
+          <div style={{ padding: '16px 32px 0' }}>
+            {expiryAlerts.summary.critical > 0 && (
+              <div style={{ background: 'rgba(255,77,109,0.08)', border: '1px solid rgba(255,77,109,0.3)', borderRadius: '14px', padding: '14px 20px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '24px' }}>🚨</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#ff4d6d', marginBottom: '4px' }}>
+                    CRITICAL: {expiryAlerts.summary.critical} medicine{expiryAlerts.summary.critical > 1 ? 's' : ''} expiring within 30 days!
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#849495' }}>
+                    {expiryAlerts.critical.map(m => `${m.name} (${m.batchNumber}) — ${m.daysLeft} days left`).join(' • ')}
+                  </p>
+                </div>
+                <button onClick={() => setActiveNav('inventory')} style={{ background: '#ff4d6d', border: 'none', borderRadius: '8px', padding: '8px 16px', color: '#fff', fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>VIEW →</button>
+              </div>
+            )}
+            {expiryAlerts.summary.warning > 0 && (
+              <div style={{ background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.3)', borderRadius: '14px', padding: '14px 20px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '24px' }}>⚠️</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#ff9500', marginBottom: '4px' }}>
+                    WARNING: {expiryAlerts.summary.warning} medicine{expiryAlerts.summary.warning > 1 ? 's' : ''} expiring within 60 days
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#849495' }}>
+                    {expiryAlerts.warning.map(m => `${m.name} — ${m.daysLeft} days left`).join(' • ')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <div style={{ padding:'28px 32px' }}>{renderContent()}</div>
+      </main>
     </div>
   )
 }
