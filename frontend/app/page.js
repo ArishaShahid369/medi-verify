@@ -5,6 +5,7 @@ import BottomNav from '../components/BottomNav'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useLanguage } from '../lib/LanguageContext'
 
 // ══ Animated Particle/DNA Canvas Background ══
 function ParticleCanvas() {
@@ -99,20 +100,9 @@ export default function LandingPage() {
   const router = useRouter()
   const [isMobile, setIsMobile] = useState(true)
   const [scrollY, setScrollY] = useState(0)
-  const [t, setT] = useState(null) // Dynamic localization object pointer
-
-  // Simulated context language getter / fallback mechanism to safe-guard keys
-  useEffect(() => {
-    // Apki translation strategy k mutabiq (next-intl ya custom context layer) dict pull karein:
-    // Fallback dictionary default English backup properties k sath ready hai
-    const defaultDict = {
-      hero: { badge: "BLOCKCHAIN VERIFICATION", title1: "Authenticity", title2: "You Can", title3: "Trust", desc: "Every medicine deserves a verified identity. MediVerify uses blockchain cryptography to instantly confirm authenticity — protecting millions of lives from counterfeit pharmaceuticals.", scan: "Scan Medicine", learn: "Learn More" },
-      features_section: { heading: "Built for Trust", subheading: "Six pillars of protection, working together", crypto_title: "Cryptographic Proof", crypto_desc: "SHA-256 hashing creates a tamper-proof fingerprint for every medicine batch.", blockchain_title: "Blockchain Ledger", blockchain_desc: "Every verification is recorded on an immutable, transparent ledger.", offline_title: "Offline-First", offline_desc: "Verify medicines using RSA digital signatures — even without internet.", ai_title: "AI Risk Engine", ai_desc: "Real-time anomaly detection flags suspicious scanning patterns instantly.", recall_title: "Smart Recalls", recall_desc: "Privacy-preserving batch recalls protect public safety immediately.", global_title: "Global Network", global_desc: "Built to scale across borders, languages, and regulatory systems." },
-      process_section: { heading: "How It Works", subheading: "From factory to your hands — in three simple steps", step1_title: "Register on Blockchain", step1_desc: "Manufacturers register each batch — a unique cryptographic hash and QR code are generated automatically.", step2_title: "Scan Anywhere", step2_desc: "Consumers scan the QR code with any phone camera — online or completely offline.", step3_title: "Instant Verification", step3_desc: "Get a verified result in under a second, with full supply chain history and risk analysis." },
-      network_section: { heading: "Global Verification Network", subheading: "Active verification nodes across 47 countries", countries: "Countries", nodes: "Active Nodes", health: "Network Health" }
-    }
-    setT(defaultDict) 
-  }, [])
+  
+  // Custom language global hook directly linked with drop-down state!
+  const { t } = useLanguage()
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -127,25 +117,20 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Safe variables for data rendering mapping
-  const activeHero = t?.hero || { badge: "BLOCKCHAIN VERIFICATION", title1: "Authenticity", title2: "You Can", title3: "Trust", desc: "Every medicine deserves a verified identity.", scan: "Scan Medicine", learn: "Learn More" }
-  const activeFeaturesHead = t?.features_section || { heading: "Built for Trust", subheading: "Six pillars of protection" }
-  const activeProcessHead = t?.process_section || { heading: "How It Works", subheading: "Three simple steps" }
-  const activeNetwork = t?.network_section || { heading: "Global Verification Network", subheading: "Active nodes", countries: "Countries", nodes: "Active Nodes", health: "Network Health" }
-
+  // Setup lists connected with dynamic context translation keys
   const features = [
-    { icon: '🔐', title: t?.features_section?.crypto_title || 'Cryptographic Proof', desc: t?.features_section?.crypto_desc || 'SHA-256 hashing creates a tamper-proof fingerprint for every medicine batch.' },
-    { icon: '⛓️', title: t?.features_section?.blockchain_title || 'Blockchain Ledger', desc: t?.features_section?.blockchain_desc || 'Every verification is recorded on an immutable, transparent ledger.' },
-    { icon: '📡', title: t?.features_section?.offline_title || 'Offline-First', desc: t?.features_section?.offline_desc || 'Verify medicines using RSA digital signatures — even without internet.' },
-    { icon: '🤖', title: t?.features_section?.ai_title || 'AI Risk Engine', desc: t?.features_section?.ai_desc || 'Real-time anomaly detection flags suspicious scanning patterns instantly.' },
-    { icon: '⚠️', title: t?.features_section?.recall_title || 'Smart Recalls', desc: t?.features_section?.recall_desc || 'Privacy-preserving batch recalls protect public safety immediately.' },
-    { icon: '🌍', title: t?.features_section?.global_title || 'Global Network', desc: t?.features_section?.global_desc || 'Built to scale across borders, languages, and regulatory systems.' },
+    { icon: '🔐', title: t('features_section.crypto_title') || 'Cryptographic Proof', desc: t('features_section.crypto_desc') || 'SHA-256 hashing creates a tamper-proof fingerprint for every medicine batch.' },
+    { icon: '⛓️', title: t('features_section.blockchain_title') || 'Blockchain Ledger', desc: t('features_section.blockchain_desc') || 'Every verification is recorded on an immutable, transparent ledger.' },
+    { icon: '📡', title: t('features_section.offline_title') || 'Offline-First', desc: t('features_section.offline_desc') || 'Verify medicines using RSA digital signatures — even without internet.' },
+    { icon: '🤖', title: t('features_section.ai_title') || 'AI Risk Engine', desc: t('features_section.ai_desc') || 'Real-time anomaly detection flags suspicious scanning patterns instantly.' },
+    { icon: '⚠️', title: t('features_section.recall_title') || 'Smart Recalls', desc: t('features_section.recall_desc') || 'Privacy-preserving batch recalls protect public safety immediately.' },
+    { icon: '🌍', title: t('features_section.global_title') || 'Global Network', desc: t('features_section.global_desc') || 'Built to scale across borders, languages, and regulatory systems.' },
   ]
 
   const steps = [
-    { num: '01', title: t?.process_section?.step1_title || 'Register on Blockchain', desc: t?.process_section?.step1_desc || 'Manufacturers register each batch — a unique cryptographic hash and QR code are generated automatically.' },
-    { num: '02', title: t?.process_section?.step2_title || 'Scan Anywhere', desc: t?.process_section?.step2_desc || 'Consumers scan the QR code with any phone camera — online or completely offline.' },
-    { num: '03', title: t?.process_section?.step3_title || 'Instant Verification', desc: t?.process_section?.step3_desc || 'Get a verified result in under a second, with full supply chain history and risk analysis.' },
+    { num: '01', title: t('process_section.step1_title') || 'Register on Blockchain', desc: t('process_section.step1_desc') || 'Manufacturers register each batch — a unique cryptographic hash and QR code are generated automatically.' },
+    { num: '02', title: t('process_section.step2_title') || 'Scan Anywhere', desc: t('process_section.step2_desc') || 'Consumers scan the QR code with any phone camera — online or completely offline.' },
+    { num: '03', title: t('process_section.step3_title') || 'Instant Verification', desc: t('process_section.step3_desc') || 'Get a verified result in under a second, with full supply chain history and risk analysis.' },
   ]
 
   const techStack = [
@@ -165,23 +150,26 @@ export default function LandingPage() {
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0,219,233,0.06)', border: '1px solid rgba(0,219,233,0.2)', borderRadius: '999px', padding: '6px 16px', marginBottom: '24px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00dbe9', boxShadow: '0 0 8px #00dbe9' }} />
-            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.14em' }}>{activeHero.badge}</span>
+            <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.14em' }}>
+              {t('hero.badge') || "BLOCKCHAIN VERIFICATION"}
+            </span>
           </div>
 
           <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '34px' : '54px', color: '#e3e1e9', lineHeight: 1.1, marginBottom: '20px' }}>
-            {activeHero.title1}<br />{activeHero.title2} <span style={{ color: '#00dbe9', textShadow: '0 0 40px rgba(0,219,233,0.4)' }}>{activeHero.title3}</span>
+            {t('hero.title1') || "Authenticity"}<br />
+            {t('hero.title2') || "You Can"} <span style={{ color: '#00dbe9', textShadow: '0 0 40px rgba(0,219,233,0.4)' }}>{t('hero.title3') || "Trust"}</span>
           </h1>
 
           <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#849495', lineHeight: 1.8, marginBottom: '32px', maxWidth: '480px' }}>
-            {activeHero.desc}
+            {t('hero.desc') || "Every medicine deserves a verified identity. MediVerify uses blockchain cryptography to instantly confirm authenticity — protecting millions of lives from counterfeit pharmaceuticals."}
           </p>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: isMobile ? '32px' : '48px' }}>
             <button onClick={() => router.push('/scan')} style={{ padding: '16px 28px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.08em', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 0 30px rgba(0,219,233,0.4)' }}>
-              ⊡ {activeHero.scan.toUpperCase()}
+              ⊡ {(t('hero.scan') || "SCAN MEDICINE").toUpperCase()}
             </button>
             <button onClick={() => router.push('/wallet')} style={{ padding: '16px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#e3e1e9', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.08em', cursor: 'pointer' }}>
-              {activeHero.learn.toUpperCase()}
+              {(t('hero.learn') || "LEARN MORE").toUpperCase()}
             </button>
           </div>
 
@@ -212,8 +200,12 @@ export default function LandingPage() {
       {/* ══ FEATURES ══ */}
       <section style={{ position: 'relative', zIndex: 1, padding: isMobile ? '20px 20px 50px' : '20px 48px 80px', maxWidth: '1300px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: isMobile ? '32px' : '48px' }}>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '24px' : '34px', color: '#e3e1e9', marginBottom: '12px' }}>{activeFeaturesHead.heading}</h2>
-          <p style={{ fontSize: '14px', color: '#849495' }}>{activeFeaturesHead.subheading}</p>
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '24px' : '34px', color: '#e3e1e9', marginBottom: '12px' }}>
+            {t('features_section.heading') || "Built for Trust"}
+          </h2>
+          <p style={{ fontSize: '14px', color: '#849495' }}>
+            {t('features_section.subheading') || "Six pillars of protection, working together"}
+          </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
           {features.map((f, i) => (
@@ -230,8 +222,12 @@ export default function LandingPage() {
       {/* ══ HOW IT WORKS ══ */}
       <section style={{ position: 'relative', zIndex: 1, padding: isMobile ? '20px 20px 50px' : '20px 48px 80px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: isMobile ? '32px' : '48px' }}>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '24px' : '34px', color: '#e3e1e9', marginBottom: '12px' }}>{activeProcessHead.heading}</h2>
-          <p style={{ fontSize: '14px', color: '#849495' }}>{activeProcessHead.subheading}</p>
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '24px' : '34px', color: '#e3e1e9', marginBottom: '12px' }}>
+            {t('process_section.heading') || "How It Works"}
+          </h2>
+          <p style={{ fontSize: '14px', color: '#849495' }}>
+            {t('process_section.subheading') || "From factory to your hands — in three simple steps"}
+          </p>
         </div>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '16px' : '24px' }}>
           {steps.map((s, i) => (
@@ -247,8 +243,12 @@ export default function LandingPage() {
       {/* ══ GLOBAL NETWORK ══ */}
       <section style={{ position: 'relative', zIndex: 1, padding: isMobile ? '20px 20px 50px' : '20px 48px 80px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: isMobile ? '24px' : '40px', textAlign: 'center' }}>
-          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '22px' : '28px', color: '#e3e1e9', marginBottom: '8px' }}>{activeNetwork.heading}</h2>
-          <p style={{ fontSize: '13px', color: '#849495', marginBottom: '24px' }}>{activeNetwork.subheading}</p>
+          <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '22px' : '28px', color: '#e3e1e9', marginBottom: '8px' }}>
+            {t('network_section.heading') || "Global Verification Network"}
+          </h2>
+          <p style={{ fontSize: '13px', color: '#849495', marginBottom: '24px' }}>
+            {t('network_section.subheading') || "Active verification nodes across 47 countries"}
+          </p>
           <svg viewBox="0 0 400 180" style={{ width: '100%', maxWidth: '500px', height: 'auto' }}>
             <path d="M30,60 Q60,50 90,65 Q100,80 80,95 Q50,100 30,85 Z" fill="rgba(0,219,233,0.08)" stroke="rgba(0,219,233,0.15)" strokeWidth="1" />
             <path d="M110,45 Q160,35 200,50 Q220,70 200,100 Q160,110 120,90 Q100,70 110,45 Z" fill="rgba(0,219,233,0.08)" stroke="rgba(0,219,233,0.15)" strokeWidth="1" />
@@ -262,7 +262,11 @@ export default function LandingPage() {
             ))}
           </svg>
           <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? '20px' : '40px', marginTop: '24px', flexWrap: 'wrap' }}>
-            {[{ val: 47, label: activeNetwork.countries }, { val: 4812, label: activeNetwork.nodes }, { val: 99, suf: '%', label: activeNetwork.health }].map((s, i) => (
+            {[
+              { val: 47, label: t('network_section.countries') || 'Countries' }, 
+              { val: 4812, label: t('network_section.nodes') || 'Active Nodes' }, 
+              { val: 99, suf: '%', label: t('network_section.health') || 'Network Health' }
+            ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, fontSize: '22px', color: '#00f5a0' }}><Counter end={s.val} suffix={s.suf || ''} /></div>
                 <div style={{ fontSize: '11px', color: '#5a6370' }}>{s.label}</div>
