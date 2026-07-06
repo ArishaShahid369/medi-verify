@@ -134,10 +134,34 @@ export default function LandingPage() {
   ]
 
   const techStack = [
-    { icon: '⛓️', title: 'Ethereum Blockchain', tag: 'BLOCKCHAIN', desc: 'Smart contracts on Ethereum ensure tamper-proof medicine registration. Every batch hash is permanently immutable.', tags: ['Smart Contracts', 'ERC-721', 'Hardhat', 'Web3.js'] },
-    { icon: '🔑', title: 'SHA-256 Cryptography', tag: 'SECURITY', desc: 'Military-grade SHA-256 hashing creates a unique fingerprint for every medicine batch — mathematically impossible to clone.', tags: ['SHA-256', 'Anti-Clone', 'Zero Collisions', 'FIPS 180-4'] },
-    { icon: '⚡', title: 'Next.js + React', tag: 'FRONTEND', desc: 'Lightning-fast Next.js frontend with server-side rendering ensures top Lighthouse scores and global CDN delivery.', tags: ['Next.js 15', 'React 19', 'Tailwind CSS', 'PWA Ready'] },
-    { icon: '🗄️', title: 'Node.js + MongoDB', tag: 'BACKEND', desc: 'High-performance Express API with MongoDB Atlas scales to millions of verification requests per day with sub-50ms response.', tags: ['Express.js', 'MongoDB Atlas', 'JWT Auth', 'REST API'] },
+    { 
+      icon: '⛓️', 
+      title: t('tech_section.blockchain_title') || 'Ethereum Blockchain', 
+      tag: t('tech_section.tag_blockchain') || 'BLOCKCHAIN', 
+      desc: t('tech_section.blockchain_desc') || 'Smart contracts on Ethereum ensure tamper-proof medicine registration. Every batch hash is permanently immutable.', 
+      tags: ['Smart Contracts', 'ERC-721', 'Hardhat', 'Web3.js'] 
+    },
+    { 
+      icon: '🔑', 
+      title: t('tech_section.crypto_title') || 'SHA-256 Cryptography', 
+      tag: t('tech_section.tag_security') || 'SECURITY', 
+      desc: t('tech_section.crypto_desc') || 'Military-grade SHA-256 hashing creates a unique fingerprint for every medicine batch — mathematically impossible to clone.', 
+      tags: ['SHA-256', 'Anti-Clone', 'Zero Collisions', 'FIPS 180-4'] 
+    },
+    { 
+      icon: '⚡', 
+      title: t('tech_section.frontend_title') || 'Next.js + React', 
+      tag: t('tech_section.tag_frontend') || 'FRONTEND', 
+      desc: t('tech_section.frontend_desc') || 'Lightning-fast Next.js frontend with server-side rendering ensures top Lighthouse scores and global CDN delivery.', 
+      tags: ['Next.js 15', 'React 19', 'Tailwind CSS', 'PWA Ready'] 
+    },
+    { 
+      icon: '🗄️', 
+      title: t('tech_section.backend_title') || 'Node.js + MongoDB', 
+      tag: t('tech_section.tag_backend') || 'BACKEND', 
+      desc: t('tech_section.backend_desc') || 'High-performance Express API with MongoDB Atlas scales to millions of verification requests per day with sub-50ms response.', 
+      tags: ['Express.js', 'MongoDB Atlas', 'JWT Auth', 'REST API'] 
+    },
   ]
 
   return (
