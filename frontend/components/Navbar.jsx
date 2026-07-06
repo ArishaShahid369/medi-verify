@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Navbar() {
   const router = useRouter()
@@ -36,6 +37,7 @@ export default function Navbar() {
 
           {/* Right side — Connect + Hamburger */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+             <LanguageSwitcher />
             <button onClick={() => router.push('/wallet')} style={{ background: 'rgba(0,219,233,0.08)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '8px 14px', color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.06em' }}>
               ⬡ CONNECT
             </button>
@@ -82,6 +84,7 @@ export default function Navbar() {
 
       {/* Right Buttons */}
       <div style={{ display: 'flex', gap: '10px' }}>
+        <LanguageSwitcher />
         <button onClick={() => router.push('/dashboard')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '9px 18px', color: '#e3e1e9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, cursor: 'pointer', letterSpacing: '0.06em' }}>
           ⊞ DASHBOARD
         </button>

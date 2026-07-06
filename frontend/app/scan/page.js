@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
+import { useLanguage } from '../../lib/LanguageContext'
 
 const QrScanner = dynamic(() => import('./QrScanner'), { ssr: false })
 
@@ -219,8 +220,8 @@ export default function ScanPage() {
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00dbe9', boxShadow: '0 0 8px #00dbe9' }} />
             <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.14em' }}>SCANNING SYSTEM ACTIVE</span>
           </div>
-          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '22px', color: '#e3e1e9' }}>Scanner Portal</h1>
-        </div>
+         <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '22px', color: '#e3e1e9' }}>{t('scan.title')}</h1>    
+         </div>
 
         {/* Controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
@@ -242,8 +243,10 @@ export default function ScanPage() {
           {/* ── 3 Scan Buttons ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
             {/* Open Camera */}
-            <button onClick={() => setCameraMode(!cameraMode)} style={{ width: '100%', padding: '13px', background: cameraMode ? 'rgba(255,77,109,0.08)' : 'rgba(0,219,233,0.08)', border: `1px solid ${cameraMode ? 'rgba(255,77,109,0.3)' : 'rgba(0,219,233,0.3)'}`, borderRadius: '12px', color: cameraMode ? '#ff4d6d' : '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              {cameraMode ? '✕ Close Camera' : '📷 Open Camera — Scan QR Code'}
+            <button 
+              onClick={() => setCameraMode(!cameraMode)} 
+              style={{ width: '100%', padding: '13px', background: cameraMode ? 'rgba(255,77,109,0.08)' : 'rgba(0,219,233,0.08)', border: `1px solid ${cameraMode ? 'rgba(255,77,109,0.3)' : 'rgba(0,219,233,0.3)'}`, borderRadius: '12px', color: cameraMode ? '#ff4d6d' : '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+             {cameraMode ? t('scan.closeCamera') : t('scan.openCamera')}
             </button>
 
             {/* Upload Image */}
@@ -257,8 +260,7 @@ export default function ScanPage() {
             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,219,233,0.25)', borderRadius: '16px', padding: '18px', marginBottom: '12px' }}>
               <label style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em', display: 'block', marginBottom: '10px' }}>ENTER BATCH CODE</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" placeholder="e.g. M-10293" value={manualCode} onChange={e => setManualCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerify()} style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '11px 14px', color: '#e3e1e9', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none' }} />
-                <button onClick={handleVerify} style={{ padding: '11px 18px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>VERIFY</button>
+               <input type="text" placeholder={t('scan.placeholder')} value={manualCode} onChange={e => setManualCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerify()} style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '11px 14px', color: '#e3e1e9', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none' }} />                <button onClick={handleVerify} style={{ padding: '11px 18px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>VERIFY</button>
               </div>
             </div>
           )}
@@ -348,8 +350,7 @@ export default function ScanPage() {
             <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,219,233,0.25)', borderRadius: '16px', padding: '20px', marginBottom: '16px' }}>
               <label style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em', display: 'block', marginBottom: '12px' }}>ENTER BATCH CODE</label>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <input type="text" placeholder="e.g. M-10293" value={manualCode} onChange={e => setManualCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerify()} style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#e3e1e9', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none' }} />
-                <button onClick={handleVerify} style={{ padding: '12px 24px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 0 16px rgba(0,219,233,0.35)' }}>VERIFY</button>
+               <input type="text" placeholder={t('scan.placeholder')} value={manualCode} onChange={e => setManualCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleVerify()} style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,219,233,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#e3e1e9', fontFamily: 'Inter, sans-serif', fontSize: '13px', outline: 'none' }} />                <button onClick={handleVerify} style={{ padding: '12px 24px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 0 16px rgba(0,219,233,0.35)' }}>VERIFY</button>
               </div>
             </div>
           )}

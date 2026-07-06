@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "home": "Home",
+    "scan": "Scan",
+    "batches": "Batches",
+    "history": "History",
+    "heatmap": "Heatmap",
+    "dashboard": "Dashboard",
+    "connect": "Connect Wallet"
+  },
+  "hero": {
+    "badge": "Blockchain Verification",
+    "title1": "Authenticity",
+    "title2": "You Can",
+    "title3": "Trust",
+    "desc": "Every medicine deserves a verified identity. MediVerify uses blockchain cryptography to instantly confirm authenticity — protecting millions of lives from counterfeit pharmaceuticals.",
+    "scan": "Scan Medicine",
+    "learn": "Learn More"
+  },
+  "scan": {
+    "title": "Scanner Portal",
+    "subtitle": "Scanning System Active",
+    "camera": "Open Camera — Scan QR Code",
+    "upload": "Upload QR Image",
+    "manual": "Manual Entry",
+    "enter": "Enter Batch Code",
+    "verify": "Verify",
+    "demo": "Demo — Simulate QR Scan",
+    "placeholder": "e.g. M-10293"
+  },
+  "result": {
+    "verified": "VERIFIED",
+    "counterfeit": "COUNTERFEIT",
+    "expired": "EXPIRED",
+    "recalled": "RECALLED",
+    "authentic_msg": "Authenticity confirmed via blockchain ledger",
+    "report": "Report",
+    "certificate": "Certificate",
+    "scan_again": "Scan Another Medicine",
+    "supply_chain": "Supply Chain Proof",
+    "blockchain_hash": "Blockchain Hash"
+  },
+  "common": {
+    "loading": "Verifying...",
+    "offline": "Cryptographically Verified Offline",
+    "offline_desc": "No internet used. Verified locally using RSA-2048 digital signature."
+  }
+}

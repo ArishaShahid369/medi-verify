@@ -1,4 +1,19 @@
 import './globals.css'
+import { LanguageProvider } from '../lib/LanguageContext'
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <head>...</head>
+      <body>
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
+        ...
+      </body>
+    </html>
+  )
+}
 
 export const metadata = {
   title: 'Medi-Verify | Blockchain Medicine Authentication',
