@@ -12,6 +12,7 @@ import { useLanguage } from '../../lib/LanguageContext'
 const QrScanner = dynamic(() => import('./QrScanner'), { ssr: false })
 
 export default function ScanPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [isMobile, setIsMobile] = useState(true)
   const [scanY, setScanY] = useState(10)

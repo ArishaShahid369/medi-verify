@@ -1,27 +1,25 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import LanguageSwitcher from './LanguageSwitcher'
+import { useLanguage } from '../lib/LanguageContext'
 
-export default function Navbar() {
+
+ export default function Navbar() {
   const router = useRouter()
   const path = usePathname()
   const [isMobile, setIsMobile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  
+  // Humara custom language hook
+  const { t } = useLanguage()
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
+  // navLinks ko andar le aaye taake t('...') chal sakay
   const navLinks = [
-    { label: 'Home', path: '/' },
-    { label: 'Scan', path: '/scan' },
-    { label: 'Batches', path: '/batches' },
-    { label: 'History', path: '/history' },
-     { label: 'Heatmap', path: '/heatmap' },
+    { label: t('nav.home') || 'Home', path: '/' },
+    { label: t('nav.scan') || 'Scan', path: '/scan' },
+    { label: t('nav.batches') || 'Batches', path: '/batches' },
+    { label: t('nav.history') || 'History', path: '/history' },
+    { label: t('nav.heatmap') || 'Heatmap', path: '/heatmap' },
   ]
 
   // ══ MOBILE ══
