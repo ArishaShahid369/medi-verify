@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useLanguage } from '../lib/LanguageContext'
-
+import LanguageSwitcher from './LanguageSwitcher'
 
  export default function Navbar() {
   const router = useRouter()
