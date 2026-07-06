@@ -17,6 +17,39 @@
     "scan": "Scan Medicine",
     "learn": "Learn More"
   },
+  "features_section": {
+    "heading": "Built for Trust",
+    "subheading": "Six pillars of protection, working together",
+    "crypto_title": "Cryptographic Proof",
+    "crypto_desc": "SHA-256 hashing creates a tamper-proof fingerprint for every medicine batch.",
+    "blockchain_title": "Blockchain Ledger",
+    "blockchain_desc": "Every verification is recorded on an immutable, transparent ledger.",
+    "offline_title": "Offline-First",
+    "offline_desc": "Verify medicines using RSA digital signatures — even without internet.",
+    "ai_title": "AI Risk Engine",
+    "ai_desc": "Real-time anomaly detection flags suspicious scanning patterns instantly.",
+    "recall_title": "Smart Recalls",
+    "recall_desc": "Privacy-preserving batch recalls protect public safety immediately.",
+    "global_title": "Global Network",
+    "global_desc": "Built to scale across borders, languages, and regulatory systems."
+  },
+  "process_section": {
+    "heading": "How It Works",
+    "subheading": "From factory to your hands — in three simple steps",
+    "step1_title": "Register on Blockchain",
+    "step1_desc": "Manufacturers register each batch — a unique cryptographic hash and QR code are generated automatically.",
+    "step2_title": "Scan Anywhere",
+    "step2_desc": "Consumers scan the QR code with any phone camera — online or completely offline.",
+    "step3_title": "Instant Verification",
+    "step3_desc": "Get a verified result in under a second, with full supply chain history and risk analysis."
+  },
+  "network_section": {
+    "heading": "Global Verification Network",
+    "subheading": "Active verification nodes across 47 countries",
+    "countries": "Countries",
+    "nodes": "Active Nodes",
+    "health": "Network Health"
+  },
   "scan": {
     "title": "Scanner Portal",
     "subtitle": "Scanning System Active",
