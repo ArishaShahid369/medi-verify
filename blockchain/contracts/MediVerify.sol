@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-/**
- * @title MediVerify
- * @dev Blockchain-powered pharmaceutical authentication
- * @author Arisha Shahid — MediVerify 2026
- */
 contract MediVerify {
 
     struct Medicine {
@@ -14,6 +9,7 @@ contract MediVerify {
         bytes32 sha256Hash;
         address manufacturer;
         uint256 registeredAt;
+        uint256 expiryTimestamp;  // ← NEW: blockchain-enforced expiry
         bool isRecalled;
         uint256 verificationCount;
     }
@@ -26,18 +22,28 @@ contract MediVerify {
         string notes;
     }
 
+    // Verification result enum
+    enum VerificationStatus {
+        AUTHENTIC,
+        EXPIRED_REVOKED,    // ← NEW: self-destruct state
+        RECALLED,
+        NOT_FOUND
+    }
+
     address public owner;
     uint256 public totalMedicines;
     uint256 public totalVerifications;
+    uint256 public totalRevokedAttempts;  // ← NEW: track clone attempts
 
     mapping(bytes32 => Medicine) public medicines;
     mapping(bytes32 => SupplyChainEvent[]) public supplyChains;
     mapping(address => bool) public authorizedManufacturers;
     mapping(address => string) public manufacturerNames;
 
-    event MedicineRegistered(string batchNumber, bytes32 hash, address manufacturer, uint256 timestamp);
-    event MedicineVerified(bytes32 hash, bool isAuthentic, uint256 timestamp);
+    event MedicineRegistered(string batchNumber, bytes32 hash, address manufacturer, uint256 expiryTimestamp);
+    event MedicineVerified(bytes32 hash, VerificationStatus status, uint256 timestamp);
     event BatchRecalled(bytes32 hash, string batchNumber, uint256 timestamp);
+    event CryptoTokenRevoked(bytes32 indexed hash, string batchNumber, uint256 attemptedAt);
     event ManufacturerAuthorized(address manufacturer, string name);
 
     modifier onlyOwner() {
@@ -71,9 +77,11 @@ contract MediVerify {
         string memory name,
         string memory batchNumber,
         bytes32 hash,
-        string memory location
+        string memory location,
+        uint256 expiryTimestamp
     ) external onlyManufacturer {
         require(medicines[hash].registeredAt == 0, "Already registered");
+        require(expiryTimestamp > block.timestamp, "Expiry must be in the future");
 
         medicines[hash] = Medicine({
             name: name,
@@ -81,6 +89,7 @@ contract MediVerify {
             sha256Hash: hash,
             manufacturer: msg.sender,
             registeredAt: block.timestamp,
+            expiryTimestamp: expiryTimestamp,
             isRecalled: false,
             verificationCount: 0
         });
@@ -94,19 +103,45 @@ contract MediVerify {
         }));
 
         totalMedicines++;
-        emit MedicineRegistered(batchNumber, hash, msg.sender, block.timestamp);
+        emit MedicineRegistered(batchNumber, hash, msg.sender, expiryTimestamp);
     }
 
+    // ══ SELF-DESTRUCTING QR VERIFICATION ══
     function verifyMedicine(bytes32 hash)
         external
         medicineExists(hash)
-        returns (bool isAuthentic, bool isRecalled, string memory batchNumber)
+        returns (VerificationStatus status, string memory batchNumber, uint256 expiryTimestamp)
     {
-        medicines[hash].verificationCount++;
+        Medicine storage med = medicines[hash];
+
+        // ── CRITICAL CHECK: Has the cryptographic token expired? ──
+        if (block.timestamp > med.expiryTimestamp) {
+            totalRevokedAttempts++;
+
+            // Log the revocation attempt on-chain
+            supplyChains[hash].push(SupplyChainEvent({
+                stage: "CRYPTO TOKEN REVOKED",
+                handler: "MediVerify Security System",
+                location: "Blockchain Enforced",
+                timestamp: block.timestamp,
+                notes: "Self-destruct triggered - expired batch scan attempt detected"
+            }));
+
+            emit CryptoTokenRevoked(hash, med.batchNumber, block.timestamp);
+            return (VerificationStatus.EXPIRED_REVOKED, med.batchNumber, med.expiryTimestamp);
+        }
+
+        // Check recall status
+        if (med.isRecalled) {
+            return (VerificationStatus.RECALLED, med.batchNumber, med.expiryTimestamp);
+        }
+
+        // Authentic!
+        med.verificationCount++;
         totalVerifications++;
 
-        emit MedicineVerified(hash, !medicines[hash].isRecalled, block.timestamp);
-        return (!medicines[hash].isRecalled, medicines[hash].isRecalled, medicines[hash].batchNumber);
+        emit MedicineVerified(hash, VerificationStatus.AUTHENTIC, block.timestamp);
+        return (VerificationStatus.AUTHENTIC, med.batchNumber, med.expiryTimestamp);
     }
 
     function addSupplyChainEvent(
@@ -139,7 +174,14 @@ contract MediVerify {
         return supplyChains[hash];
     }
 
-    function getStats() external view returns (uint256, uint256) {
-        return (totalMedicines, totalVerifications);
+    function getStats() external view returns (uint256, uint256, uint256) {
+        return (totalMedicines, totalVerifications, totalRevokedAttempts);
+    }
+
+    // ── Check if token is still valid (read-only) ──
+    function isTokenValid(bytes32 hash) external view returns (bool) {
+        if (medicines[hash].registeredAt == 0) return false;
+        if (medicines[hash].isRecalled) return false;
+        return block.timestamp <= medicines[hash].expiryTimestamp;
     }
 }

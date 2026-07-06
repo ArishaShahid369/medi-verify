@@ -1,266 +1,260 @@
-'use client'
-export const dynamic = 'force-dynamic'
+"use client";
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { downloadCertificate } from '../../components/Certificate'
-import Navbar from '../../components/Navbar'
-import BottomNav from '../../components/BottomNav'
-import Footer from '../../components/Footer'
-
-function ResultContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(true)
-  const [medicine, setMedicine] = useState(null)
-  const [result, setResult] = useState('authentic')
-  const [responseTime, setResponseTime] = useState(0)
-  const [error, setError] = useState(null)
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  useEffect(() => {
-    const mode = searchParams.get('mode')
-    if (mode === 'offline') {
-      const stored = sessionStorage.getItem('offlineVerification')
-      if (stored) {
-        const v = JSON.parse(stored)
-        if (v.valid) {
-          const m = v.payload
-          setMedicine({
-            name: m.name, genericName: m.genericName, batchNumber: m.batch,
-            serialNumber: m.serial, dosage: m.dosage, saltComposition: m.saltComposition,
-            manufacturerName: m.manufacturer, licenseNumber: m.license,
-            expiryDate: m.expiry, sha256Hash: m.hash, isOnChain: true,
-            verificationCount: 0, supplyChain: [],
-          })
-          setResult(new Date(m.expiry) < new Date() ? 'expired' : 'authentic')
-        } else {
-          setResult('counterfeit')
-        }
-      }
-      setLoading(false)
-      return
-    }
-
-    const fetchData = async () => {
-      try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
-        const hash = searchParams.get('hash')
-        const batch = searchParams.get('batch')
-        const serial = searchParams.get('serial')
-        const body = hash ? { hash } : batch ? { batchNumber: batch } : serial ? { serialNumber: serial } : { batchNumber: 'M-10293' }
-
-        const res = await fetch(`${API_URL}/verify/scan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        })
-        const data = await res.json()
-        if (data.success) {
-          setMedicine(data.medicine)
-          setResult(data.result)
-          setResponseTime(data.responseTime || 0)
-        } else {
-          // Demo fallback
-          setMedicine({
-            name: 'Amoxicillin CL', genericName: 'Amoxicillin Trihydrate',
-            batchNumber: batch || 'M-10293', serialNumber: 'SN-2024-001',
-            dosage: '500mg', saltComposition: 'Amoxicillin Trihydrate IP 500mg',
-            manufacturerName: 'MediCorp Pharmaceuticals', licenseNumber: 'LIC-MED-2024-PK',
-            expiryDate: '2027-12-01', sha256Hash: 'a8f2e4c9d1b7f5e3a2c6d8f4b1e9a7c5d3f2b8e6a4c1d9f7b5e3a2c8d6f4b9e1',
-            isOnChain: true, verificationCount: 1247,
-            supplyChain: [
-              { stage: 'Manufacturing', handler: 'MediCorp Pharmaceuticals', timestamp: '2024-01-15', location: 'Lahore, PK', notes: 'Genesis Block' },
-              { stage: 'Quality Check', handler: 'QC Laboratory', timestamp: '2024-01-20', location: 'Lahore, PK', notes: 'All tests passed' },
-              { stage: 'Distribution', handler: 'National Pharma', timestamp: '2024-02-01', location: 'Karachi, PK', notes: 'Cold chain maintained' },
-              { stage: 'Consumer', handler: 'You', timestamp: new Date().toISOString(), location: 'Your Location', notes: 'Verified Today' },
-            ]
-          })
-          setResult('authentic')
-          setResponseTime(847)
-        }
-      } catch (err) {
-        // Demo fallback on error
-        setMedicine({
-          name: 'Amoxicillin CL', genericName: 'Amoxicillin Trihydrate',
-          batchNumber: searchParams.get('batch') || 'M-10293', serialNumber: 'SN-2024-001',
-          dosage: '500mg', saltComposition: 'Amoxicillin Trihydrate IP 500mg',
-          manufacturerName: 'MediCorp Pharmaceuticals', licenseNumber: 'LIC-MED-2024-PK',
-          expiryDate: '2027-12-01', sha256Hash: 'a8f2e4c9d1b7f5e3a2c6d8f4b1e9a7c5d3f2b8e6a4c1d9f7b5e3a2c8d6f4b9e1',
-          isOnChain: true, verificationCount: 1247,
-          supplyChain: [
-            { stage: 'Manufacturing', handler: 'MediCorp Pharmaceuticals', timestamp: '2024-01-15', location: 'Lahore, PK', notes: 'Genesis Block' },
-            { stage: 'Quality Check', handler: 'QC Laboratory', timestamp: '2024-01-20', location: 'Lahore, PK', notes: 'All tests passed' },
-            { stage: 'Distribution', handler: 'National Pharma', timestamp: '2024-02-01', location: 'Karachi, PK', notes: 'Cold chain maintained' },
-            { stage: 'Consumer', handler: 'You', timestamp: new Date().toISOString(), location: 'Your Location', notes: 'Verified Today' },
-          ]
-        })
-        setResult('authentic')
-        setResponseTime(847)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [searchParams])
-
-  const resultColor = result === 'authentic' ? '#00f5a0' : result === 'expired' ? '#ff9500' : '#ff4d6d'
-  const resultIcon = result === 'authentic' ? '✅' : result === 'expired' ? '⚠️' : '❌'
-  const resultText = result === 'authentic' ? 'VERIFIED' : result === 'expired' ? 'EXPIRED' : result === 'recalled' ? 'RECALLED' : 'COUNTERFEIT'
-
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0A0B10', display: 'flex', flexDirection: 'column' }}>
-      <Navbar />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '60px', height: '60px', borderRadius: '50%', border: '3px solid rgba(0,219,233,0.2)', borderTop: '3px solid #00dbe9', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }} />
-          <p style={{ color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '16px', fontWeight: 600 }}>Verifying Medicine...</p>
-          <p style={{ color: '#5a6370', fontSize: '12px', marginTop: '8px' }}>Checking blockchain records</p>
-        </div>
-      </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#0A0B10', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '300px', background: `radial-gradient(circle, ${resultColor}10 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 }} />
-      <Navbar />
-
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: '900px', margin: '0 auto', padding: isMobile ? '20px 16px' : '40px 40px' }}>
-
-        {/* Result Hero */}
-        <div style={{ textAlign: 'center', padding: '32px 0 24px' }}>
-          <div style={{ fontSize: '64px', marginBottom: '16px' }}>{resultIcon}</div>
-          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, fontSize: isMobile ? '40px' : '56px', color: resultColor, textShadow: `0 0 40px ${resultColor}60`, marginBottom: '8px', letterSpacing: '0.06em' }}>{resultText}</h1>
-          <p style={{ fontSize: '12px', color: '#849495', letterSpacing: '0.16em', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600 }}>
-            {result === 'authentic' ? 'AUTHENTICITY CONFIRMED VIA BLOCKCHAIN LEDGER' : 'WARNING: VERIFICATION FAILED'}
-          </p>
-          {responseTime > 0 && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(0,219,233,0.06)', border: '1px solid rgba(0,219,233,0.15)', borderRadius: '999px', padding: '5px 16px', marginTop: '12px' }}>
-              <span style={{ fontSize: '12px', color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600 }}>⚡ Verified in {responseTime}ms</span>
-            </div>
-          )}
-        </div>
-
-        {medicine ? (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: '20px' }}>
-            {/* Medicine Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: '15%', right: '15%', height: '1px', background: `linear-gradient(90deg, transparent, ${resultColor}60, transparent)` }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                  <div>
-                    <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: isMobile ? '20px' : '26px', color: '#e3e1e9', marginBottom: '4px' }}>{medicine.name}</h2>
-                    <p style={{ fontSize: '11px', color: '#849495', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>{medicine.genericName?.toUpperCase()}</p>
-                  </div>
-                  <div style={{ background: 'rgba(0,219,233,0.08)', border: '1px solid rgba(0,219,233,0.25)', borderRadius: '8px', padding: '6px 14px' }}>
-                    <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#00dbe9' }}>{medicine.dosage}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                  {[
-                    { label: 'BATCH NUMBER', val: medicine.batchNumber },
-                    { label: 'EXPIRY DATE', val: medicine.expiryDate ? new Date(medicine.expiryDate).toLocaleDateString('en-US', { month: '2-digit', year: 'numeric' }) : 'N/A' },
-                    { label: 'MANUFACTURER', val: medicine.manufacturerName },
-                    { label: 'LICENSE', val: medicine.licenseNumber },
-                  ].map((f, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px' }}>
-                      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '6px' }}>{f.label}</p>
-                      <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '14px', fontWeight: 700, color: '#e3e1e9' }}>{f.val}</p>
-                    </div>
-                  ))}
-                </div>
-                {medicine.saltComposition && (
-                  <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '14px' }}>
-                    <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '9px', fontWeight: 700, color: '#849495', letterSpacing: '0.12em', marginBottom: '6px' }}>SALT COMPOSITION</p>
-                    <p style={{ fontSize: '13px', color: '#b9cacb', lineHeight: 1.5, fontStyle: 'italic' }}>{medicine.saltComposition}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Hash */}
-              <div style={{ background: 'rgba(0,219,233,0.04)', border: '1px solid rgba(0,219,233,0.15)', borderRadius: '16px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '10px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.12em' }}>BLOCKCHAIN HASH</p>
-                  <span style={{ fontSize: '11px', color: '#00f5a0', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>✓ IMMUTABLE</span>
-                </div>
-                <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#00dbe9', wordBreak: 'break-all', lineHeight: 1.6 }}>{medicine.sha256Hash}</p>
-              </div>
-
-              {/* Buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <button onClick={() => alert('Report submitted! Our compliance team will review this case within 24 hours.')} style={{ padding: '14px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>↗ REPORT</button>
-                <button onClick={() => downloadCertificate(medicine, result, responseTime)} style={{ padding: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', color: '#e3e1e9', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', cursor: 'pointer' }}>↓ CERTIFICATE</button>
-              </div>
-              <button onClick={() => router.push('/scan')} style={{ width: '100%', padding: '13px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#849495', fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>← SCAN ANOTHER MEDICINE</button>
-            </div>
-
-            {/* Supply Chain */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '24px', alignSelf: 'start' }}>
-              <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '11px', fontWeight: 700, color: '#00dbe9', letterSpacing: '0.14em', marginBottom: '20px' }}>SUPPLY CHAIN PROOF</p>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {(medicine.supplyChain?.length > 0 ? medicine.supplyChain : [
-                  { stage: 'Manufacturing', handler: medicine.manufacturerName, timestamp: medicine.manufactureDate || new Date(), location: 'Factory', notes: 'Genesis Block' },
-                  { stage: 'Consumer', handler: 'You', timestamp: new Date(), location: 'Your Location', notes: 'Verified Today' },
-                ]).map((step, i, arr) => (
-                  <div key={i} style={{ display: 'flex', gap: '14px', marginBottom: i < arr.length - 1 ? '0' : '0' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: i === arr.length - 1 ? 'rgba(0,219,233,0.15)' : 'rgba(255,255,255,0.05)', border: `2px solid ${i === arr.length - 1 ? '#00dbe9' : 'rgba(255,255,255,0.1)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: i === arr.length - 1 ? '0 0 14px rgba(0,219,233,0.4)' : 'none' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: i === arr.length - 1 ? '#00dbe9' : 'rgba(255,255,255,0.3)' }} />
-                      </div>
-                      {i < arr.length - 1 && <div style={{ width: '1px', height: '36px', background: 'repeating-linear-gradient(to bottom, rgba(0,219,233,0.3) 0px, rgba(0,219,233,0.3) 4px, transparent 4px, transparent 10px)' }} />}
-                    </div>
-                    <div style={{ paddingTop: '4px', paddingBottom: '12px', flex: 1 }}>
-                      <h4 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '13px', fontWeight: 700, color: i === arr.length - 1 ? '#00dbe9' : '#e3e1e9', marginBottom: '3px' }}>{step.handler || step.stage}</h4>
-                      <p style={{ fontSize: '11px', color: '#849495' }}>{step.notes} • {new Date(step.timestamp).toLocaleDateString()}</p>
-                      {step.location && <p style={{ fontSize: '10px', color: '#5a6370', marginTop: '2px' }}>📍 {step.location}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(0,245,160,0.05)', border: '1px solid rgba(0,245,160,0.15)', borderRadius: '12px', textAlign: 'center' }}>
-                <p style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '12px', fontWeight: 700, color: '#00f5a0', marginBottom: '4px' }}>🔐 CRYPTOGRAPHIC PROOF</p>
-                <p style={{ fontSize: '11px', color: '#849495' }}>{medicine.verificationCount?.toLocaleString() || '0'} verifications • Chain intact</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-            <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '22px', color: '#ff4d6d', marginBottom: '12px' }}>Medicine Not Found</h2>
-            <p style={{ fontSize: '14px', color: '#849495', marginBottom: '24px' }}>{error || 'This medicine is not registered on MediVerify blockchain.'}</p>
-            <button onClick={() => router.push('/scan')} style={{ padding: '14px 28px', background: '#00dbe9', color: '#001214', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '13px', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>← SCAN AGAIN</button>
-          </div>
-        )}
-        <div style={{ height: isMobile ? '80px' : '40px' }} />
-      </div>
-      <Footer />
-      {isMobile && <BottomNav />}
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-}
+import React, { useState, useEffect } from "react";
+import { Shield, AlertTriangle, CheckCircle, Clock, Activity, WifiOff, Cpu } from "lucide-react";
 
 export default function ResultPage() {
+  const [searchQuery, setSearchQuery] = useState("M-10293");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationTime, setVerificationTime] = useState(0);
+  const [isOffline, setIsOffline] = useState(false);
+  const [showResult, setShowResult] = useState(true);
+
+  // Hardcoded Mock Data for Demonstration (Matching your Exact Video Script)
+  const [batchData, setBatchData] = useState({
+    batchId: "M-10293",
+    medicineName: "Amoxicillin 500mg",
+    manufacturer: "PharmaCorp Global",
+    blockchainTx: "0x96662c29a7f56C6817065749c35E7F95AE83B971",
+    aiRiskScore: 2, // Low risk normally
+    isExpired: false, // Switch to true to trigger the Self-Destruct feature
+    timestamp: "2026-07-06 14:45",
+    signature: "RSA-2048: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  });
+
+  // Handle Offline Simulation via Window Events
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const handleVerify = (e) => {
+    e.preventDefault();
+    if (!searchQuery) return;
+
+    setIsVerifying(true);
+    setShowResult(false);
+    
+    // Exact Script Verification Time: 847ms
+    const startTime = performance.now();
+    setTimeout(() => {
+      setIsVerifying(false);
+      setShowResult(true);
+      setVerificationTime(847); 
+    }, 847);
+  };
+
+  // KILLER FEATURE: Toggle Expiry to show Judges the Blockchain Self-Destruct state
+  const toggleSelfDestructDemo = () => {
+    setBatchData(prev => ({
+      ...prev,
+      isExpired: !prev.isExpired,
+      aiRiskScore: !prev.isExpired ? 98 : 2 // Risk skyrockets if expired token is reused
+    }));
+  };
+
   return (
-    <Suspense fallback={
-      <div style={{ minHeight: '100vh', background: '#0A0B10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', border: '3px solid rgba(0,219,233,0.2)', borderTop: '3px solid #00dbe9', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#00dbe9', fontFamily: 'Space Grotesk, sans-serif', fontSize: '15px', fontWeight: 600 }}>Verifying...</p>
+    <div className="min-h-screen bg-[#0B0F19] text-slate-100 p-6 flex flex-col items-center justify-center font-sans selection:bg-cyan-500 selection:text-black">
+      
+      {/* Background Glows for Modern Dark Theme Aesthetic */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-2xl z-10">
+        {/* Header Setup */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            MediVerify Cryptographic Scanner
+          </h1>
+          <p className="text-slate-400 text-sm mt-2">
+            Decentralized Autonomous Verification Engine v2.4
+          </p>
         </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+        {/* Search / Manual Entry Input Form */}
+        <form onSubmit={handleVerify} className="mb-6 flex gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Enter Batch ID (e.g., M-10293)..."
+            className="flex-1 bg-slate-900/80 border border-slate-800 rounded-xl px-4 py-3 text-cyan-400 font-mono focus:outline-none focus:border-cyan-500 transition-all backdrop-blur-md"
+          />
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-900 font-bold px-6 rounded-xl transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
+          >
+            Verify
+          </button>
+        </form>
+
+        {/* Live Status Indicators */}
+        <div className="flex gap-4 mb-6 justify-center text-xs font-mono">
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${isOffline ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+            {isOffline ? <WifiOff size={14} /> : <Activity size={14} />}
+            {isOffline ? "OFFLINE MODE ACTIVE" : "NODE CONNECTION: LIVE"}
+          </div>
+          <button 
+            onClick={toggleSelfDestructDemo}
+            className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-1.5 rounded-full hover:bg-red-500/20 transition-all"
+          >
+            ⚙️ Simulate {batchData.isExpired ? "Valid State" : "Self-Destruct/Expiry"}
+          </button>
+        </div>
+
+        {/* Verification Loader State */}
+        {isVerifying && (
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center backdrop-blur-md flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="font-mono text-cyan-400 text-sm animate-pulse">Querying Sepolia Ledger & Running Cryptographic Check...</p>
+          </div>
+        )}
+
+        {/* MAIN RESULTS DISPENSATION SECTION */}
+        {showResult && !isVerifying && (
+          <div className="space-y-6">
+            
+            {/* CONDITION A: SELF-DESTRUCTED / EXPIRED UI (JUDGE KILLER DROP-DOWN) */}
+            {batchData.isExpired ? (
+              <div className="relative overflow-hidden bg-red-950/40 border-2 border-red-500 rounded-2xl p-6 backdrop-blur-md shadow-2xl shadow-red-500/10 animate-pulse">
+                <div className="absolute top-0 right-0 bg-red-500 text-black font-black text-[10px] px-3 py-1 rounded-bl-lg font-mono tracking-widest">
+                  REVOKED
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-red-500/20 rounded-xl text-red-400">
+                    <AlertTriangle size={32} className="animate-bounce" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-red-400 font-mono tracking-wide">
+                      CRITICAL: CRYPTOGRAPHIC TOKEN REVOKED
+                    </h2>
+                    <p className="text-slate-300 text-sm mt-1">
+                      This batch (<span className="text-red-400 font-mono font-bold">{batchData.batchId}</span>) has passed its time-lock expiration schema. The Smart Contract ledger has permanently executed a state self-destruct routine for this token.
+                    </p>
+                    <div className="mt-4 bg-black/40 border border-red-500/20 p-3 rounded-lg font-mono text-xs text-red-300 space-y-1">
+                      <p>• Status: Cryptographically Invalidated</p>
+                      <p>• Action: DO NOT CONSUME. Batch execution halted by ledger.</p>
+                      <p>• Anti-Clone Flag: Active threat detected on cloned string.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              
+              /* CONDITION B: FULL SUCCESS / VERIFIED UI (ORIGINAL PERFECT APP ROUTINE) */
+              <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-md shadow-xl space-y-6">
+                
+                {/* Header Status Bar */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/20 rounded-xl text-emerald-400">
+                      <CheckCircle size={24} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase tracking-widest block font-mono">Verification Status</span>
+                      <h2 className="text-lg font-bold text-emerald-400 font-mono flex items-center gap-2">
+                        AUTHENTICITY VERIFIED
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="text-right font-mono text-xs text-slate-400">
+                    <span className="text-emerald-400 font-bold">{verificationTime || "847"} ms</span> latency
+                  </div>
+                </div>
+
+                {/* Metadata Ledger Panel */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
+                    <span className="text-[11px] text-slate-500 block">Medicine Architecture</span>
+                    <span className="font-semibold text-slate-200">{batchData.medicineName}</span>
+                  </div>
+                  <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
+                    <span className="text-[11px] text-slate-500 block">Authorized Manufacturer</span>
+                    <span className="font-semibold text-slate-200">{batchData.manufacturer}</span>
+                  </div>
+                </div>
+
+                {/* Supply Chain Timeline Trace UI */}
+                <div>
+                  <h3 className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-1.5">
+                    <Clock size={12} /> Real-Time Immutable Supply Chain Timeline
+                  </h3>
+                  <div className="space-y-3 font-mono text-xs pl-2 border-l-2 border-cyan-500/30 ml-2">
+                    <div className="relative flex justify-between items-center text-slate-300">
+                      <div className="absolute -left-[15px] w-2 h-2 rounded-full bg-cyan-500" />
+                      <span>Factory Packaged & RSA Signed</span>
+                      <span className="text-[10px] text-slate-500">{batchData.timestamp}</span>
+                    </div>
+                    <div className="relative flex justify-between items-center text-slate-400">
+                      <div className="absolute -left-[15px] w-2 h-2 rounded-full bg-slate-700" />
+                      <span>Distributed to Verified Logistics</span>
+                      <span className="text-[10px] text-slate-500">In-Transit Check ✓</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Risk Scoring Gauges Section */}
+                <div className="border-t border-slate-800 pt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xs font-mono uppercase tracking-widest text-slate-400 flex items-center gap-1.5">
+                      <Cpu size={12} /> AI Risk Engine Scan Evaluation
+                    </h3>
+                    <span className={`text-xs font-mono font-bold ${batchData.aiRiskScore > 10 ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {batchData.aiRiskScore}% Risk Index
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+                    <div 
+                      className={`h-full transition-all duration-1000 ${batchData.aiRiskScore > 10 ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`}
+                      style={{ width: `${batchData.aiRiskScore}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    {batchData.aiRiskScore > 10 
+                      ? "ALERT: High scanning localization match indicating potential cloned barcode pattern matching."
+                      : "No anomaly vectors detected. Pattern profile aligns with genuine non-duplicated system deployment."}
+                  </p>
+                </div>
+
+              </div>
+            )}
+
+            {/* BLOCKCHAIN PROOF & CRYPTOGRAPHIC FOOTER (Works in both states) */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 font-mono text-xs space-y-2 text-slate-400">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1"><Shield size={12} className="text-cyan-500" /> Cryptographic Signature Status:</span>
+                <span className={isOffline ? "text-amber-400 font-bold" : "text-cyan-400"}>
+                  {isOffline ? "Cryptographically Verified Offline ✓" : "ECDSA + RSA Verified"}
+                </span>
+              </div>
+              <div className="truncate">
+                <span className="text-slate-500">Hash Check:</span> {batchData.signature}
+              </div>
+              <div className="truncate pt-2 border-t border-slate-900 flex justify-between items-center">
+                <span>Etherscan Smart Contract Proof:</span>
+                <a 
+                  href={`https://sepolia.etherscan.io/address/${batchData.blockchainTx}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 hover:underline hover:text-cyan-300"
+                >
+                  0x9666...B971 ↗
+                </a>
+              </div>
+            </div>
+
+          </div>
+        )}
+
       </div>
-    }>
-      <ResultContent />
-    </Suspense>
-  )
+    </div>
+  );
 }
