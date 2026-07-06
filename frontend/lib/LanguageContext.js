@@ -1,34 +1,59 @@
 'use client'
-import { useLanguage } from '../lib/LanguageContext'
+import { createContext, useContext, useState, useEffect } from 'react'
 
-export default function LanguageSwitcher() {
-  const { lang, changeLanguage, languages } = useLanguage()
+const LanguageContext = createContext()
+
+const languages = {
+  en: { name: 'English', flag: '🇬🇧', dir: 'ltr' },
+  ur: { name: 'اردو', flag: '🇵🇰', dir: 'rtl' },
+  ar: { name: 'العربية', flag: '🇸🇦', dir: 'rtl' },
+  bn: { name: 'বাংলা', flag: '🇧🇩', dir: 'ltr' },
+}
+
+export function LanguageProvider({ children }) {
+  const [lang, setLang] = useState('en')
+  const [messages, setMessages] = useState({})
+
+  useEffect(() => {
+    const saved = localStorage.getItem('mediverify_lang') || 'en'
+    setLang(saved)
+    loadMessages(saved)
+  }, [])
+
+  const loadMessages = async (language) => {
+    try {
+      // 🟢 Ek dafa peeche ja kar messages folder mein check karein
+      const msgs = await import(`../messages/${language}.json`)
+      setMessages(msgs.default)
+    } catch {
+      // 🟢 Catch block mein bhi path theek kar dein
+      const msgs = await import(`../messages/en.json`)
+      setMessages(msgs.default)
+    }
+  }
+
+  const changeLanguage = (newLang) => {
+    setLang(newLang)
+    localStorage.setItem('mediverify_lang', newLang)
+    loadMessages(newLang)
+    document.documentElement.dir = languages[newLang]?.dir || 'ltr'
+  }
+
+  const t = (key) => {
+    const keys = key.split('.')
+    let val = messages
+    for (const k of keys) {
+      val = val?.[k]
+    }
+    return val || key
+  }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      <select
-        value={lang}
-        onChange={(e) => changeLanguage(e.target.value)}
-        style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(0, 219, 233, 0.25)',
-          borderRadius: '10px',
-          padding: '8px 12px',
-          color: '#00dbe9',
-          fontFamily: 'Space Grotesk, sans-serif',
-          fontSize: '12px',
-          fontWeight: 700,
-          cursor: 'pointer',
-          outline: 'none',
-          backdropFilter: 'blur(10px)'
-        }}
-      >
-        {Object.keys(languages).map((code) => (
-          <option key={code} value={code} style={{ background: '#0a0b10', color: '#e3e1e9' }}>
-            {languages[code].flag} {languages[code].name}
-          </option>
-        ))}
-      </select>
-    </div>
+    <LanguageContext.Provider value={{ lang, changeLanguage, t, languages }}>
+      {children}
+    </LanguageContext.Provider>
   )
 }
+
+// 👑 YEH LINE SAB SE IMPORTANT HAI JO MISSING THI!
+export const useLanguage = () => useContext(LanguageContext)
