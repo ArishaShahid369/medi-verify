@@ -1,20 +1,6 @@
 import './globals.css'
 import { LanguageProvider } from '../lib/LanguageContext'
 
-export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <head>...</head>
-      <body>
-        <LanguageProvider>
-          {children}
-        </LanguageProvider>
-        ...
-      </body>
-    </html>
-  )
-}
-
 export const metadata = {
   title: 'Medi-Verify | Blockchain Medicine Authentication',
   description: 'Instantly verify pharmaceutical authenticity using blockchain technology.',
@@ -37,7 +23,11 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/medicine-capsule.png" />
       </head>
       <body>
-        {children}
+        {/* Poori app ko custom provider mein wrap kiya */}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
