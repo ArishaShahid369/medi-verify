@@ -113,5 +113,19 @@
     "loading": "Verifying...",
     "offline": "Cryptographically Verified Offline",
     "offline_desc": "No internet used. Verified locally using RSA-2048 digital signature."
-  }
+  },
+  "tech_section": {
+  "blockchain_title": "Ethereum Blockchain",
+  "tag_blockchain": "BLOCKCHAIN",
+  "blockchain_desc": "Smart contracts on Ethereum ensure tamper-proof medicine registration. Every batch hash is permanently immutable.",
+  "crypto_title": "SHA-256 Cryptography",
+  "tag_security": "SECURITY",
+  "crypto_desc": "Military-grade SHA-256 hashing creates a unique fingerprint for every medicine batch — mathematically impossible to clone.",
+  "frontend_title": "Next.js + React",
+  "tag_frontend": "FRONTEND",
+  "frontend_desc": "Lightning-fast Next.js frontend with server-side rendering ensures top Lighthouse scores and global CDN delivery.",
+  "backend_title": "Node.js + MongoDB",
+  "tag_backend": "BACKEND",
+  "backend_desc": "High-performance Express API with MongoDB Atlas scales to millions of verification requests per day with sub-50ms response."
+}
 }
