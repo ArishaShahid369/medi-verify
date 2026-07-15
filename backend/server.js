@@ -14,6 +14,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false
 }))
+
 // ══ Security ══
 app.use(helmet({
   crossOriginResourcePolicy: false,
@@ -32,15 +33,32 @@ app.use('/api/', limiter)
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
-// ══ MongoDB Connect ══
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 60000,
-  connectTimeoutMS: 60000,
-  socketTimeoutMS: 90000,
-  family: 4
-})
-  .then(() => console.log('✅ MongoDB Connected!'))
-  .catch(err => console.error('❌ MongoDB Error:', err.message))
+// ══ MongoDB Connection Helper ══
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 60000,
+      connectTimeoutMS: 60000,
+      socketTimeoutMS: 90000,
+      family: 4
+    });
+    console.log('✅ MongoDB Connected!');
+  } catch (err) {
+    console.error('❌ MongoDB Error:', err.message);
+  }
+};
+
+// Pehli dafa initial connection setup karein
+connectDB();
+
+// ══ Serverless Connection Middleware ══
+// Har request aane par check karega ke DB connected hai ya nahi (Vercel ke liye zaroori hai)
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 // ══ Routes ══
 app.use('/api/auth', require('./routes/authRoutes'))
@@ -79,11 +97,12 @@ cron.schedule('0 0 * * *', async () => {
     console.error('❌ Expiry check error:', err.message)
   }
 })
-
 console.log('⏰ Expiry alert cron job scheduled!')
 
 // ══ Health Check ══
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
+  await connectDB();
+  
   res.json({
     success: true,
     message: '🔬 MediVerify API is Live!',
