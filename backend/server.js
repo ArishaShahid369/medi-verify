@@ -33,7 +33,12 @@ app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
 // ══ MongoDB Connect ══
-mongoose.connect(process.env.MONGODB_URI)
+const mongoOptions = {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+}
+
+mongoose.connect(process.env.MONGODB_URI, mongoOptions)
   .then(() => console.log('✅ MongoDB Connected!'))
   .catch(err => console.error('❌ MongoDB Error:', err.message))
 
